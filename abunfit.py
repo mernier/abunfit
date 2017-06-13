@@ -12,7 +12,7 @@ def main():
 	if len(sys.argv) < 4:
 		sys.exit("Error: Uncorrect arguments.\n\n \
 		PROGRAM: abunfit.py\n\n \
-		SYNOPSIS: ./abunfit_dual.py [input_file] [number_of_models] [alpha] [SNe_model_1] [SNe_model_2] ... \n\n \
+		SYNOPSIS: ./abunfit.py [input_file] [number_of_models] [alpha] [SNe_model_1] [SNe_model_2] ... \n\n \
 		DESCRIPTION: Fits a set of intra-cluster abundances with a combination of \n \
 		supernovae (SNe) yields models. Several models (either SNcc or SNIa) are available \n \
 		and can be updated or created.\n\n \
