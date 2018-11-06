@@ -33,7 +33,7 @@ ________________________________________________________________________________
 |		                        (2) the measured abundance, and  
 |		                        (3) its associated (symmetrical) uncertainties. 
 |		        [number_of_models] -- Integer indicating the number of  models to 
-					      be fitted simultaneously (min: 1, max: 4). 
+|					      be fitted simultaneously (min: 1, max: 4). 
 |		        [alpha] -- Slope index of the assumed initial mass function (IMF).  
 |		                   Ex: for Salpeter IMF, alpha = -2.35. 
 |		        [model<1/2/...>] -- Name of the model. Currently available models:  
