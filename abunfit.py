@@ -5,14 +5,33 @@ import sys
 import math
 import numpy
 import scipy.optimize as optimization
+import matplotlib
+import matplotlib.pyplot as plt
 
 
 def main():
+	####### User parameters #######
+
+	plotting_mode = True		# Plot a figure with the best-fit models and save it into "fig_output.pdf"
+
+	default_color_SNIa = "#4881ea"	# In plotting mode, the default color for the first SNIa model (if any)
+	default_color_SNcc = "violet"	# In plotting mode, the default color for the first SNcc model (if any)
+	default_color_AGB = "gold"	# In plotting mode, the default color for the first AGB model (if any)
+
+	alpha_SNcc_equiv_AGB = True	# If true, AGB model(s) follow the same IMF as for SNcc models
+	alpha_AGB = -2.35		# Slope of the IMF for AGB model(s), if alpha_SNcc_equiv_AGB = False
+
+	abun_table = "lodders09.txt"	# Table of reference (solar) abundances
+
+	###############################
+
+
+
 
 	if len(sys.argv) < 4:
 		sys.exit("Error: Uncorrect arguments.\n\n \
 		PROGRAM: abunfit.py\n\n \
-		SYNOPSIS: ./abunfit.py [input_file] [number_of_models] [alpha] [SNe_model_1] [SNe_model_2] ... \n\n \
+		SYNOPSIS: ./abunfit_dual.py [input_file] [number_of_models] [alpha] [SNe_model_1] [SNe_model_2] ... \n\n \
 		DESCRIPTION: Fits a set of intra-cluster abundances with a combination of \n \
 		supernovae (SNe) yields models. Several models (either SNcc or SNIa) are available \n \
 		and can be updated or created.\n\n \
@@ -22,8 +41,8 @@ def main():
 		                        (1) the element number (Z), \n \
 		                        (2) the measured abundance, and \n \
 		                        (3) its associated (symmetrical) uncertainties.\n\n \
-		        [number_of_models] -- Integer (from 1 to 4) indicating the number of \n \
- 			                      models to be fitted simultaneously (min: 2, max: 4).\n \
+		        [number_of_models] -- Integer indicating the number of models to\n \
+ 			                       be fitted simultaneously (min: 1, max: 4).\n \
 		        [alpha] -- Slope index of the assumed initial mass function (IMF). \n \
 		                   Ex: for Salpeter IMF, alpha = -2.35.\n \
 		        [model<1/2/...>] -- Name of the model. Currently available models: \n \
@@ -31,133 +50,214 @@ def main():
 		                            ==== SNIa ====\n \
 		                            ==============\n \
 		                            == Iwamoto et al. (1999)\n \
-		                             - Iwamoto_W7\n \
-		                             - Iwamoto_W70\n \
-		                             - Iwamoto_WDD1\n \
-		                             - Iwamoto_WDD2\n \
-		                             - Iwamoto_WDD3\n \
-		                             - Iwamoto_CDD1\n \
-		                             - Iwamoto_CDD2\n \
+		                             - Iw99_W7\n \
+		                             - Iw99_W70\n \
+		                             - Iw99_WDD1\n \
+		                             - Iw99_WDD2\n \
+		                             - Iw99_WDD3\n \
+		                             - Iw99_CDD1\n \
+		                             - Iw99_CDD2\n \
 		                            == Badenes et al. (2006)\n \
 		                               (Based on Tycho's best spectral fits...)\n \
-		                             - Badenes_DDTa\n \
-		                             - Badenes_DDTb\n \
-		                             - Badenes_DDTc\n \
-		                             - Badenes_DDTd\n \
-		                             - Badenes_DDTe\n \
-		                             - Badenes_DDTf\n \
+		                             - Ba06_DDTa\n \
+		                             - Ba06_DDTb\n \
+		                             - Ba06_DDTc\n \
+		                             - Ba06_DDTd\n \
+		                             - Ba06_DDTe\n \
+		                             - Ba06_DDTf\n \
 		                            == Maeda et al. (2010)\n \
 		                               (2-D explosion models...)\n \
-		                             - Maeda_C-DEF\n \
-		                             - Maeda_C-DDT\n \
-		                             - Maeda_O-DDT\n \
+		                             - Ma10_C-DEF\n \
+		                             - Ma10_C-DDT\n \
+		                             - Ma10_O-DDT\n \
 		                            == Seitenzahl et al. (2013)\n \
 		                               (3-D delayed-detonation explosion models...)\n \
-		                             - Seitenzahl_N1\n \
-		                             - Seitenzahl_N3\n \
-		                             - Seitenzahl_N5\n \
-		                             - Seitenzahl_N10\n \
-		                             - Seitenzahl_N20\n \
-		                             - Seitenzahl_N40\n \
-		                             - Seitenzahl_N100H\n \
-		                             - Seitenzahl_N100\n \
-		                             - Seitenzahl_N100L\n \
-		                             - Seitenzahl_N150\n \
-		                             - Seitenzahl_N200\n \
-		                             - Seitenzahl_N300C\n \
-		                             - Seitenzahl_N1600\n \
-		                             - Seitenzahl_N1600C\n \
-		                             - Seitenzahl_N100_Z0.5\n \
-		                             - Seitenzahl_N100_Z0.1\n \
-		                             - Seitenzahl_N100_Z0.01\n \
+		                             - Se13_N1\n \
+		                             - Se13_N3\n \
+		                             - Se13_N5\n \
+		                             - Se13_N10\n \
+		                             - Se13_N20\n \
+		                             - Se13_N40\n \
+		                             - Se13_N100H\n \
+		                             - Se13_N100\n \
+		                             - Se13_N100L\n \
+		                             - Se13_N150\n \
+		                             - Se13_N200\n \
+		                             - Se13_N300C\n \
+		                             - Se13_N1600\n \
+		                             - Se13_N1600C\n \
+		                             - Se13_N100_Z0.5\n \
+		                             - Se13_N100_Z0.1\n \
+		                             - Se13_N100_Z0.01\n \
 		                            == Fink et al. (2014)\n \
 		                               (3-D deflagration explosion models...)\n \
-		                             - Fink_N1def\n \
-		                             - Fink_N3def\n \
-		                             - Fink_N5def\n \
-		                             - Fink_N10def\n \
-		                             - Fink_N20def\n \
-		                             - Fink_N40def\n \
-		                             - Fink_N100Hdef\n \
-		                             - Fink_N100def\n \
-		                             - Fink_N100Ldef\n \
-		                             - Fink_N150def\n \
-		                             - Fink_N200def\n \
-		                             - Fink_N300Cdef\n \
-		                             - Fink_N1600def\n \
-		                             - Fink_N1600Cdef\n \
+		                             - Fi14_N1def\n \
+		                             - Fi14_N3def\n \
+		                             - Fi14_N5def\n \
+		                             - Fi14_N10def\n \
+		                             - Fi14_N20def\n \
+		                             - Fi14_N40def\n \
+		                             - Fi14_N100Hdef\n \
+		                             - Fi14_N100def\n \
+		                             - Fi14_N100Ldef\n \
+		                             - Fi14_N150def\n \
+		                             - Fi14_N200def\n \
+		                             - Fi14_N300Cdef\n \
+		                             - Fi14_N1600def\n \
+		                             - Fi14_N1600Cdef\n \
+		                            == Ohlmann et al. (2014)\n \
+		                               (3-D delayed-detonation expl. models, varying C fraction...)\n \
+		                             - Oh14_DDT8_N100_c50\n \
+		                             - Oh14_DDT8_N100_rpc20\n \
+		                             - Oh14_DDT8_N100_rpc32\n \
+		                             - Oh14_DDT8_N100_rpc40\n \
+		                            == Leung & Nomoto (2018)\n \
+		                               (2-D explosion models with varying initial metallicities...)\n \
+		                             - Le18_050-1-c3-1P\n \
+		                             - Le18_100-1-c3-1P\n \
+		                             - Le18_100-0-c3\n \
+		                             - Le18_100-0.1-c3\n \
+		                             - Le18_100-0.5-c3\n \
+		                             - Le18_100-1-c3\n \
+		                             - Le18_100-2-c3\n \
+		                             - Le18_100-3-c3\n \
+		                             - Le18_100-5-c3\n \
+		                             - Le18_300-1-c3-1P\n \
+		                             - Le18_300-0-c3\n \
+		                             - Le18_300-0.1-c3\n \
+		                             - Le18_300-0.5-c3\n \
+		                             - Le18_300-1-c3\n \
+		                             - Le18_300-2-c3\n \
+		                             - Le18_300-3-c3\n \
+		                             - Le18_300-5-c3\n \
+		                             - Le18_500-1-c3-1P\n \
+		                             - Le18_500-0-c3\n \
+		                             - Le18_500-0.1-c3\n \
+		                             - Le18_500-0.5-c3\n \
+		                             - Le18_500-1-c3\n \
+		                             - Le18_500-2-c3\n \
+		                             - Le18_500-3-c3\n \
+		                             - Le18_500-5-c3\n \
+		                            ==== Double-detonation (He shell) ====\n \
+		                            == Sim et al. (2012)\n \
+		                             - Si12_CSDD-L\n \
+		                             - Si12_CSDD-S\n \
+		                             - Si12_ELDD-L\n \
+		                             - Si12_ELDD-S\n \
+		                             - Si12_HeD-L\n \
+		                             - Si12_HeD-S\n \
+		                            ==== Gravitationally confined detonation ====\n \
+		                            == Seitenzahl et al. (2016)\n \
+		                             - Se16_GCD200\n \
+		                            ==== Oxygen-neon WD ====\n \
+		                            == Marquardt et al. (2015)\n \
+		                             - Ma15_CO15e7\n \
+		                             - Ma15_ONe10e7\n \
+		                             - Ma15_ONe13e7\n \
+		                             - Ma15_ONe15e7\n \
+		                             - Ma15_ONe17e7\n \
+		                             - Ma15_ONe20e7\n \
+		                            ==== Hybrid WD (CO and ONe layers) ====\n \
+		                            == Kromer et al. (2015)\n \
+		                             - Kromer_N5_hybrid\n \
 		                            ==== Ca-rich gap transient SNe ====\n \
 		                            == Waldman et al. (2011)\n \
-		                             - Waldman_CO.45HE.2\n \
-		                             - Waldman_CO.55HE.2\n \
-		                             - Waldman_CO.5HE.15\n \
-		                             - Waldman_CO.5HE.2\n \
-		                             - Waldman_CO.5HE.2C.3\n \
-		                             - Waldman_CO.5HE.2N.02\n \
-		                             - Waldman_CO.5HE.3\n \
-		                             - Waldman_CO.6HE.2\n \
+		                             - Wa11_CO.45HE.2\n \
+		                             - Wa11_CO.55HE.2\n \
+		                             - Wa11_CO.5HE.15\n \
+		                             - Wa11_CO.5HE.2\n \
+		                             - Wa11_CO.5HE.2C.3\n \
+		                             - Wa11_CO.5HE.2N.02\n \
+		                             - Wa11_CO.5HE.3\n \
+		                             - Wa11_CO.6HE.2\n \
+		                            == Sim et al. (2010)\n \
+		                               (Detonation, single deg. channel...)\n \
+		                             - Si10_det_0.81\n \
+		                             - Si10_det_0.88\n \
+		                             - Si10_det_0.97\n \
+		                             - Si10_det_1.06\n \
+		                             - Si10_det_1.06_0.075Ne\n \
+		                             - Si10_det_1.15\n \
 		                            ==== Sub-Chandrasekhar DD merger ====\n \
 		                            == Pakmor et al. (2010)\n \
-		                             - Pakmor\n \
+		                               (Violent merger of 0.9+0.9 M_sun...)\n \
+		                             - Pa10_09_09\n \
+		                            == Pakmor et al. (2012)\n \
+		                               (Violent merger of 1.1+0.9 M_sun...)\n \
+		                             - Pa12_11_09\n \
+		                            == Kromer et al. (2013)\n \
+		                               (Violent merger of 0.9+0.76 M_sun...)\n \
+		                             - Kr13_09_076\n \
+		                            == Kromer et al. (2013)\n \
+		                               (Same, with lower initial metallicity...)\n \
+		                             - Kr13_09_076_Z0.01\n \
+		                            == Shen et al. (2018)\n \
+		                               (Dynamically-driven double-degenerate double-detonation)\n \
+		                             - Sh18_M[08/085/09/10/11]_[3070/5050]_Z[0/0005/001/002]_[01/1]\n \
 		                            ==============\n \
 		                            ==== SNcc ====\n \
 		                            ==============\n \
 		                            == Chieffi & Limongi (2004)\n \
 		                               (One initial metallicity per model...)\n \
-		                             - Chieffi_0\n \
-		                             - Chieffi_1E-6\n \
-		                             - Chieffi_1E-4\n \
-		                             - Chieffi_1E-3\n \
-		                             - Chieffi_6E-3\n \
-		                             - Chieffi_2E-2\n \
+		                             - Ch04_0\n \
+		                             - Ch04_1E-6\n \
+		                             - Ch04_1E-4\n \
+		                             - Ch04_1E-3\n \
+		                             - Ch04_6E-3\n \
+		                             - Ch04_2E-2\n \
 		                            == Nomoto et al. (2006)\n \
 		                               (One initial metallicity per model...)\n \
-		                             - Nomoto_0\n \
-		                             - Nomoto_0.001\n \
-		                             - Nomoto_0.004\n \
-		                             - Nomoto_0.02\n \
+		                             - No06_0\n \
+		                             - No06_0.001\n \
+		                             - No06_0.004\n \
+		                             - No06_0.02\n \
 		                            == Nomoto et al. (2013)\n \
 		                               (One initial metallicity per model...)\n \
 		                             = SNcc: 11 - 40 (140) M_sun\n \
-		                              - N13_SNcc_0\n \
-		                              - N13_SNcc_0.001\n \
-		                              - N13_SNcc_0.004\n \
-		                              - N13_SNcc_0.008\n \
-		                              - N13_SNcc_0.02\n \
-		                              - N13_SNcc_0.05\n \
+		                              - No13_SNcc_0\n \
+		                              - No13_SNcc_0.001\n \
+		                              - No13_SNcc_0.004\n \
+		                              - No13_SNcc_0.008\n \
+		                              - No13_SNcc_0.02\n \
+		                              - No13_SNcc_0.05\n \
 		                             = PISNe: 140 - 300 M_sun\n \
-		                              - N13_PISNe_0\n \
+		                              - No13_PISNe_0\n \
 		                             = All SNe (SNcc+PISNe): 11 - 300 M_sun\n \
-		                              - N13_SNe_0\n \
+		                              - No13_SNe_0\n \
 		                             = HNe: 20 - 40 (140) M_sun\n \
-		                              - N13_HNe_0\n \
-		                              - N13_HNe_0.001\n \
-		                              - N13_HNe_0.004\n \
-		                              - N13_HNe_0.008\n \
-		                              - N13_HNe_0.02\n \
-		                              - N13_HNe_0.05\n \
+		                              - No13_HNe_0\n \
+		                              - No13_HNe_0.001\n \
+		                              - No13_HNe_0.004\n \
+		                              - No13_HNe_0.008\n \
+		                              - No13_HNe_0.02\n \
+		                              - No13_HNe_0.05\n \
 		                            == Heger & Woosley (2002,2010)\n \
 		                               (Initial metallicity always 0!)\n \
 		                             = SNcc: 10 - 100 M_sun\n \
-		                              - HW_SNcc_0\n \
+		                              - He0210_SNcc_0\n \
 		                             = PISNe: 140 - 260 M_sun\n \
-		                              - HW_PISNe_0\n \
+		                              - He0210_PISNe_0\n \
 		                             = All SNe (SNcc+PISNe): 10 - 260 M_sun\n \
-		                              - HW_SNe_0\n \
+		                              - He0210_SNe_0\n \
+		                            == Sukhbold et al. (2016)\n \
+		                              - Su16_N20\n \
+		                              - Su16_W18\n \
 		                            ===================\n \
 		                            ==== AGB stars ====\n \
 		                            ===================\n \
 		                            == Nomoto et al. (2013)\n \
 		                               (One initial metallicity per model...)\n \
 		                             = AGB: 0.9 - 6.5 M_sun (adapted from Karakas 2010)\n \
-		                             = THE AGB MODEL MUST AT THE FIRST POSITION!\n \
-		                              - N13_AGB+SNcc_0\n \
-		                              - N13_AGB+SNcc_0.001\n \
-		                              - N13_AGB+SNcc_0.004\n \
-		                              - N13_AGB+SNcc_0.008\n \
-		                              - N13_AGB+SNcc_0.02\n\n \
-		EXAMPLE: ./abunfit.py cluster/average_CHEERS.out 2 -2.35 Iwamoto_WDD2 Nomoto_0.02\n\n \
-		VERSION: 1.2 (February 2016)\n \
+		                              - No13_AGB_0.001\n \
+		                              - No13_AGB_0.004\n \
+		                              - No13_AGB_0.008\n \
+		                              - No13_AGB_0.02\n\n \
+		EXAMPLE: ./abunfit.py data/CHEERS_Mernier18b.out 2 -2.35 No13_SNcc_0.02 Se13_N100\n\n \
+		VERSION: 2.0 (November 2018)\n \
+		         1.5 (June 2018)\n \
+		         1.4 (January 2018)\n \
+		         1.3 (December 2017)\n \
+		         1.2 (February 2016)\n \
 		         1.1 (January 2016)\n \
 		         1.0 (July 2015)\n\n \
 		AUTHOR: Francois Mernier\n\n")
@@ -177,8 +277,17 @@ def main():
 	if number_of_models>3:
 		input_mod_4=sys.argv[7]
 	if number_of_models>4 or number_of_models<1:
-		sys.exit("Error: This program can only fit 1,2,3 or 4 models simultaneously... Sorry :(")
+		sys.exit("Error: This program can fit only 1, 2, 3 or 4 models simultaneously... Sorry :(")
 
+
+
+
+
+
+
+##############################################################################################
+#	Load files and tables...
+##############################################################################################
 
 
 
@@ -193,6 +302,8 @@ def main():
 	# IMF assumption: Salpeter
 	#alpha = -2.35
 	alpha = float(alpha)
+	if alpha_SNcc_equiv_AGB == True:
+		alpha_AGB = alpha
 
 
 
@@ -212,7 +323,7 @@ def main():
 	mass = numpy.arange(len(elements))
 	mass = mass*0.0
 	for i in range(len(elements)):
-		mass[i] = atom_mass[elements[i]-1,1]
+		mass[i] = atom_mass[int(elements[i])-1,1]
 
 
 
@@ -221,15 +332,27 @@ def main():
 
 	# Read abundance tables (Lodders et al. 2009). 
 	# lodders[i] = protosolar abun. of the ith element (rel. to Si==10^6).
-	f3 = file("lodders09.txt")
-	abun_table = numpy.loadtxt(f3)
+	f3 = file(abun_table)
+	abun_file = numpy.loadtxt(f3)
 
 	lodders = numpy.arange(len(elements))
 	lodders = lodders*0.0
 	for i in range(len(elements)):
-		lodders[i] = abun_table[elements[i]-1,1]
+		lodders[i] = abun_file[int(elements[i])-1,1]
 
 
+
+
+
+
+
+
+
+
+
+##############################################################################################
+#	Set up (and, if relevant, integrate) yield models...
+##############################################################################################
 
 
 
@@ -259,7 +382,7 @@ def main():
 	elif (input_mod_1 in list_models_SNcc):
 		model1 = integrate_SNcc(input_mod_1,alpha,cl_elem_name)
 	elif (input_mod_1 in list_models_AGB):
-		model1 = integrate_AGB(input_mod_1,alpha,cl_elem_name)
+		model1 = integrate_AGB(input_mod_1,alpha_AGB,cl_elem_name)
 	else:
 		print "Error: The model", input_mod_1, "does not exist, or could not be found."
 		sys.exit()
@@ -271,7 +394,7 @@ def main():
 		elif (input_mod_2 in list_models_SNcc):
 			model2 = integrate_SNcc(input_mod_2,alpha,cl_elem_name)
 		elif (input_mod_2 in list_models_AGB):
-			model2 = integrate_AGB(input_mod_2,alpha,cl_elem_name)
+			model2 = integrate_AGB(input_mod_2,alpha_AGB,cl_elem_name)
 		else:
 			print "Error: The model", input_mod_2, "does not exist, or could not be found."
 			sys.exit()
@@ -283,7 +406,7 @@ def main():
 		elif (input_mod_3 in list_models_SNcc):
 			model3 = integrate_SNcc(input_mod_3,alpha,cl_elem_name)
 		elif (input_mod_3 in list_models_AGB):
-			model3 = integrate_AGB(input_mod_3,alpha,cl_elem_name)
+			model3 = integrate_AGB(input_mod_3,alpha_AGB,cl_elem_name)
 		else:
 			print "Error: The model", input_mod_3, "does not exist, or could not be found."
 			sys.exit()
@@ -295,11 +418,10 @@ def main():
 		elif (input_mod_4 in list_models_SNcc):
 			model4 = integrate_SNcc(input_mod_4,alpha,cl_elem_name)
 		elif (input_mod_4 in list_models_AGB):
-			model4 = integrate_AGB(input_mod_4,alpha,cl_elem_name)
+			model4 = integrate_AGB(input_mod_4,alpha_AGB,cl_elem_name)
 		else:
 			print "Error: The model", input_mod_4, "does not exist, or could not be found."
 			sys.exit()
-
 
 
 
@@ -314,6 +436,8 @@ def main():
 	if number_of_models>3:
 		print "Model: ", input_mod_4
 		print model4
+	#print "Mass: ", mass
+	#print "Lodders: ", lodders
 
 
 	x=numpy.arange(len(elements))
@@ -345,7 +469,17 @@ def main():
 
 
 
-	# Fit...
+
+
+
+
+
+##############################################################################################
+#	Fit...
+##############################################################################################
+
+
+
 	SNe=numpy.arange(number_of_models)
 	SNe=SNe+1000
 	x0=SNe
@@ -403,39 +537,19 @@ def main():
 
 
 
-	# AGB component separation...
-	if (input_mod_1 in list_models_AGB):
-		if number_of_models==1:
-			SNcc_contrib = extract_SNcc_contrib_1model(input_mod_1, alpha, \
-			              cl_elem_name, mass, lodders, elements, bestSNe , cl_abun)
-		if number_of_models==2:
-			SNcc_contrib = extract_SNcc_contrib_2models(input_mod_1, model2, alpha, \
-			              cl_elem_name, mass, lodders, elements, bestSNe , cl_abun)
-		if number_of_models==3:
-			SNcc_contrib = extract_SNcc_contrib_3models(input_mod_1, model2, model3, alpha, \
-			              cl_elem_name, mass, lodders, elements, bestSNe , cl_abun)
-		if number_of_models==4:
-			SNcc_contrib = extract_SNcc_contrib_4models(input_mod_1, model2, model3, model4, alpha, \
-			              cl_elem_name, mass, lodders, elements, bestSNe , cl_abun)
-		#print bestSNe[0]*x
-		#print SNcc_contrib
-		AGB_contrib = bestSNe[0]*x - SNcc_contrib
-		#print AGB_contrib
 
 
 
 
 
-
-
-#	#Check for possible (unphysical) negative contribution...
-#	for i in range(len(bestSNe)):
-#		if bestSNe[i] < 0.0:
-#			print "Error: One model has a negative contribution to the enrichment. This is physically not allowed."
-#			chi = 9999999
-#			chiout = open("currentchi.txt", 'w+')
-#			chiout.write("%s" % int(chi*100000))
-#			sys.exit()
+	#Check for possible (unphysical) negative contribution...
+	for i in range(len(bestSNe)):
+		if bestSNe[i] < 0.0:
+			print "Error: One model has a negative contribution to the enrichment. This is physically not allowed."
+			chi = 9999999
+			chiout = open("currentchi.txt", 'w+')
+			chiout.write("%s" % int(chi*100000))
+			sys.exit()
 
 
 
@@ -465,7 +579,13 @@ def main():
 
 
 
-	#Display QDP to screen...
+
+
+##############################################################################################
+#	Print results in a QDP/text file (output.qdp)...
+##############################################################################################
+
+
 	print "--------------------------QDP FILE--------------------------" 
 	print "skip single"
 	print "line on 2,3,4,5,6"
@@ -481,20 +601,10 @@ def main():
 	print "! Total of models"
 	for el in range(len(elements)):
 		print elements[el], 0, bestfit[el], 0
-	if (input_mod_1 in list_models_AGB):
-		print "NO"
-		print "! Model:", input_mod_1, "(AGB contribution)"
-		for el in range(len(elements)):
-			print elements[el], 0, AGB_contrib[el], 0
-		print "NO"
-		print "! Model:", input_mod_1, "(SNcc contribution)"
-		for el in range(len(elements)):
-			print elements[el], 0, SNcc_contrib[el], 0
-	else:
-		print "NO"
-		print "! Model:", input_mod_1
-		for el in range(len(elements)):
-			print elements[el], 0, bestSNe[0]*x[el], 0
+	print "NO"
+	print "! Model:", input_mod_1
+	for el in range(len(elements)):
+		print elements[el], 0, bestSNe[0]*x[el], 0
 	if number_of_models>1:
 		print "NO"
 		print "! Model:", input_mod_2
@@ -533,22 +643,11 @@ def main():
 	for el in range(len(elements)):
 		qdpout.write("%s %s %s %s\n" % (elements[el], 0, bestfit[el], 0))
 
-	if (input_mod_1 in list_models_AGB):
-		qdpout.write("NO\n")
-		qdpout.write("! Model: %s (AGB contribution)\n" % input_mod_1)
-		for el in range(len(elements)):
-			qdpout.write("%s %s %s %s\n" % (elements[el], 0, AGB_contrib[el], 0))
-		qdpout.write("NO\n")
-		qdpout.write("! Model: %s (SNcc contribution)\n" % input_mod_1)
-		for el in range(len(elements)):
-			qdpout.write("%s %s %s %s\n" % (elements[el], 0, SNcc_contrib[el], 0))
-	else:
+	qdpout.write("NO\n")
+	qdpout.write("! Model: %s\n" % input_mod_1)
 
-		qdpout.write("NO\n")
-		qdpout.write("! Model: %s\n" % input_mod_1)
-
-		for el in range(len(elements)):
-			qdpout.write("%s %s %s %s\n" % (elements[el], 0, bestSNe[0]*x[el], 0))
+	for el in range(len(elements)):
+		qdpout.write("%s %s %s %s\n" % (elements[el], 0, bestSNe[0]*x[el], 0))
 
 	if number_of_models>1:
 		qdpout.write("NO\n")
@@ -579,41 +678,117 @@ def main():
 
 
 
+##############################################################################################
+#	Plotting with matplotlib...
+##############################################################################################
+
+
+	if plotting_mode == True:
+		fig = plt.figure()
+		fig.subplots_adjust(bottom=0.12, right=0.95, top=0.95)
+
+		xmax = len(elements)+1
+		ymax = rescale_ymax(number_of_models, bestfit, data, errors)
+
+
+		plt.axis([0, xmax, 0.0, ymax])
+		#plt.xlabel('Atomic numer', fontsize=14)
+		plt.ylabel("X/Fe Abundance ratio (proto-solar)", fontsize=12)
+		plt.tick_params(labelsize=13)
+		xaxis = numpy.arange(len(elements)+1)
+		xaxis = numpy.delete(xaxis, 0)
+		xlabels=cl_elem_name
+		plt.xticks(xaxis, xlabels)
+		width_bars=0.60
+
+
+
+		# Plot histograms and data points (depending on the number of models)
+
+		if number_of_models==1:
+			color1 = set_colors_1(input_mod_1, default_color_SNIa, default_color_SNcc, default_color_AGB)
+			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, color=color1, zorder=1)
+			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, color='none', edgecolor='black', zorder=2)
+			input_mod_1 = rename_model(input_mod_1, list_models_SNIa, list_models_SNcc, list_models_AGB)
+
+
+		if number_of_models==2:
+			color2 = set_colors_2(input_mod_1, input_mod_2, default_color_SNIa, default_color_SNcc, default_color_AGB)
+			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, color=color2[0], zorder=1)
+			p2 = plt.bar(tuple(xaxis), tuple(bestSNe[1]*y[:]), width_bars, color=color2[1], bottom=bestSNe[0]*x[:], zorder=1)
+			input_mod_1 = rename_model(input_mod_1, list_models_SNIa, list_models_SNcc, list_models_AGB)
+			input_mod_2 = rename_model(input_mod_2, list_models_SNIa, list_models_SNcc, list_models_AGB)
+			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, color='none', edgecolor='black', zorder=2)
+
+		if number_of_models==3:
+			color3 = set_colors_3(input_mod_1, input_mod_2, input_mod_3, default_color_SNIa, default_color_SNcc, default_color_AGB)
+			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, color=color3[0], zorder=1)
+			p2 = plt.bar(tuple(xaxis), tuple(bestSNe[1]*y[:]), width_bars, color=color3[1], bottom=bestSNe[0]*x[:], zorder=1)
+			p3 = plt.bar(tuple(xaxis), tuple(bestSNe[2]*z[:]), width_bars, color=color3[2], bottom=bestSNe[0]*x[:]+bestSNe[1]*y[:], zorder=1)
+			input_mod_1 = rename_model(input_mod_1, list_models_SNIa, list_models_SNcc, list_models_AGB)
+			input_mod_2 = rename_model(input_mod_2, list_models_SNIa, list_models_SNcc, list_models_AGB)
+			input_mod_3 = rename_model(input_mod_3, list_models_SNIa, list_models_SNcc, list_models_AGB)
+			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, color='none', edgecolor='black', zorder=2)
+
+		if number_of_models==4:
+			color4 = set_colors_4(input_mod_1, input_mod_2, input_mod_3, input_mod_4, default_color_SNIa, default_color_SNcc, default_color_AGB)
+			print bestSNe[3]*w[:]
+			print color4
+			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, color=color4[0], zorder=1)
+			p2 = plt.bar(tuple(xaxis), tuple(bestSNe[1]*y[:]), width_bars, color=color4[1], bottom=bestSNe[0]*x[:], zorder=1)
+			p3 = plt.bar(tuple(xaxis), tuple(bestSNe[2]*z[:]), width_bars, color=color4[2], bottom=bestSNe[0]*x[:]+bestSNe[1]*y[:], zorder=1)
+			p4 = plt.bar(tuple(xaxis), tuple(bestSNe[3]*w[:]), width_bars, color=color4[3], bottom=bestSNe[0]*x[:]+bestSNe[1]*y[:]+bestSNe[2]*z[:], zorder=1)
+			input_mod_1 = rename_model(input_mod_1, list_models_SNIa, list_models_SNcc, list_models_AGB)
+			input_mod_2 = rename_model(input_mod_2, list_models_SNIa, list_models_SNcc, list_models_AGB)
+			input_mod_3 = rename_model(input_mod_3, list_models_SNIa, list_models_SNcc, list_models_AGB)
+			input_mod_4 = rename_model(input_mod_4, list_models_SNIa, list_models_SNcc, list_models_AGB)
+			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, color='none', edgecolor='black', zorder=2)
+
+
+
+		item1 = plt.errorbar(xaxis[:], data[:], xerr=0.0, yerr=errors[:], ls=' ', linewidth=1.0, color='black', markersize=6, fmt='s', zorder=3)
+		plt.axhline(y=1.0, xmin=0, xmax=30, color='black', linestyle='--', linewidth=1.0, alpha=0.4, zorder=0)
+		plt.annotate("$\chi^2$/d.o.f. = "+str(numpy.round_(float(chi),1))+"/"+str((len(elements)- number_of_models)), xy=(0.95*xmax, 0.9*ymax), horizontalalignment='right', color='black', fontsize=14)
 
 
 
 
-	#Write into "output.dat"...
-	barplout = open("output.dat", 'w+')
 
-	if number_of_models==1:
-		for el in range(len(elements)):
-			if (input_mod_1 in list_models_AGB):
-				barplout.write("%s %s %s %s %s %s %s\n" % (int(elements[el]), data[el], errors[el], AGB_contrib[el], SNcc_contrib[el], 0.0, 0.0))
-			else:
-				barplout.write("%s %s %s %s %s %s\n" % (int(elements[el]), data[el], errors[el], bestSNe[0]*x[el], 0.0, 0.0))
 
-	if number_of_models==2:
-		for el in range(len(elements)):
-			if (input_mod_1 in list_models_AGB):
-				barplout.write("%s %s %s %s %s %s %s\n" % (int(elements[el]), data[el], errors[el], AGB_contrib[el], SNcc_contrib[el], bestSNe[1]*y[el], 0.0))
-			else:
-				barplout.write("%s %s %s %s %s %s\n" % (int(elements[el]), data[el], errors[el], bestSNe[0]*x[el], bestSNe[1]*y[el], 0.0))
-			
+		# Plot legend (depending on the number of models)
 
-	if number_of_models==3:
-		for el in range(len(elements)):
-			if (input_mod_1 in list_models_AGB):
-				barplout.write("%s %s %s %s %s %s %s\n" % (int(elements[el]), data[el], errors[el], AGB_contrib[el], SNcc_contrib[el], bestSNe[1]*y[el], bestSNe[2]*z[el]))
-			else:
-				barplout.write("%s %s %s %s %s %s\n" % (int(elements[el]), data[el], errors[el], bestSNe[0]*x[el], bestSNe[1]*y[el], bestSNe[2]*z[el]))
+		if number_of_models==1:
+			plt.legend([item1, p1], ["Data", input_mod_1], ncol=1, numpoints=1, loc=(0.02,0.85), fontsize=10)
+		if number_of_models==2:
+			plt.legend([item1, p1, p2], ["Data", input_mod_1, input_mod_2], ncol=1, numpoints=1, loc=(0.02,0.80), fontsize=10)
+		if number_of_models==3:
+			plt.legend([item1, p1, p2, p3], ["Data", input_mod_1, input_mod_2, input_mod_3], ncol=1, numpoints=1, loc=(0.02,0.75), fontsize=10)
+		if number_of_models==4:
+			plt.legend([item1, p1, p2, p3, p4], ["Data", input_mod_1, input_mod_2, input_mod_3, input_mod_4], ncol=1, numpoints=1, loc=(0.02,0.70), fontsize=10)
 
-	if number_of_models==4:
-		for el in range(len(elements)):
-			if (input_mod_1 in list_models_AGB):
-				barplout.write("%s %s %s %s %s %s %s %s\n" % (int(elements[el]), data[el], errors[el], AGB_contrib[el], SNcc_contrib[el], bestSNe[1]*y[el], bestSNe[2]*z[el], bestSNe[3]*w[el]))
-			else:
-				barplout.write("%s %s %s %s %s %s %s\n" % (int(elements[el]), data[el], errors[el], bestSNe[0]*x[el], bestSNe[1]*y[el], bestSNe[2]*z[el], bestSNe[3]*w[el]))
+
+		plt.show()
+		fig.savefig('fig_output.pdf', format='pdf')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -640,8 +815,15 @@ def main():
 
 
 
-# # # # # # # FUNCTIONS # # # # # # #
-# # # # # # # # # # # # # # # # # # #
+
+
+
+
+
+
+##############################################################################################
+#	ADDITIONAL FUNCTIONS
+##############################################################################################
 
 
 
@@ -649,48 +831,55 @@ def main():
 ## and assuming a certain IMF.
 def integrate_SNcc( input_model, alpha , elem_name ):
 
-	if (input_model == "Nomoto_0") or (input_model == "Nomoto_0.001") or \
-		(input_model == "Nomoto_0.004") or (input_model == "Nomoto_0.02") or \
-		(input_model == "Nomoto_0_undecayed") or (input_model == "Nomoto_0.001_undecayed") or \
-		(input_model == "Nomoto_0.004_undecayed") or (input_model == "Nomoto_0.02_undecayed"):
+	if (input_model == "No06_0") or (input_model == "No06_0.001") or \
+		(input_model == "No06_0.004") or (input_model == "No06_0.02") or \
+		(input_model == "No06_0_undecayed") or (input_model == "No06_0.001_undecayed") or \
+		(input_model == "No06_0.004_undecayed") or (input_model == "No06_0.02_undecayed"):
 		m=[13,15,18,20,25,30,40]
-		dm=[2,2.5,2.5,3.5,5,7.5,10]
-	elif (input_model == "Chieffi_0") or (input_model == "Chieffi_1E-6") or \
-		(input_model == "Chieffi_1E-4") or (input_model == "Chieffi_1E-3") or \
-		(input_model == "Chieffi_6E-3") or (input_model == "Chieffi_2E-2"):
+	elif (input_model == "Ch04_0") or (input_model == "Ch04_1E-6") or \
+		(input_model == "Ch04_1E-4") or (input_model == "Ch04_1E-3") or \
+		(input_model == "Ch04_6E-3") or (input_model == "Ch04_2E-2"):
 		m=[13,15,20,25,30,35]
-		dm=[2,3.5,5,5,5,10]
-	elif (input_model == "N13_SNcc_0"):
+	elif (input_model == "No13_SNcc_0"):
 		m=[11,13,15,18,20,25,30,40,100,140]
-		dm=[1.5,2,2.5,2.5,3.5,5,7.5,10,0,0]
-	elif (input_model == "N13_SNcc_0.001") or (input_model == "N13_SNcc_0.004") or \
-		(input_model == "N13_SNcc_0.008") or (input_model == "N13_SNcc_0.02") or \
-		(input_model == "N13_SNcc_0.05"):
+	elif (input_model == "No13_SNcc_0.001") or (input_model == "No13_SNcc_0.004") or \
+		(input_model == "No13_SNcc_0.008") or (input_model == "No13_SNcc_0.02") or \
+		(input_model == "No13_SNcc_0.05"):
 		m=[13,15,18,20,25,30,40]
-		dm=[2,2.5,2.5,3.5,5,7.5,10]
-	elif (input_model == "N13_PISNe_0"):
+	elif (input_model == "No13_PISNe_0"):
 		m=[140,150,170,200,270,300]
 		dm=[5,15,25,50,50,15]
-	elif (input_model == "N13_SNe_0"):
+	elif (input_model == "No13_SNe_0"):
 		m=[11,13,15,18,20,25,30,40,100,140,150,170,200,270,300]
-		dm=[1.5,2,2.5,2.5,3.5,5,7.5,35,50,25,15,25,50,50,15]
-	elif (input_model == "N13_HNe_0"):
+	elif (input_model == "No13_HNe_0"):
 		m=[20,25,30,40,100,140]
-		dm=[3.5,5,7.5,35,50,20]
-	elif (input_model == "N13_HNe_0.001") or (input_model == "N13_HNe_0.004") or \
-		(input_model == "N13_HNe_0.008") or (input_model == "N13_HNe_0.02") or \
-		(input_model == "N13_HNe_0.05"):
+	elif (input_model == "No13_HNe_0.001") or (input_model == "No13_HNe_0.004") or \
+		(input_model == "No13_HNe_0.008") or (input_model == "No13_HNe_0.02") or \
+		(input_model == "No13_HNe_0.05"):
 		m=[20,25,30,40]
-		dm=[3.5,5,7.5,10]
-	elif (input_model == "HW_SNcc_0"):
+	elif (input_model == "He0210_SNcc_0"):
 		m=[10,12,15,20,25,35,50,75,100]
-		dm=[1.5,2.5,4,5,7.5,12.5,20,25,25]
-	elif (input_model == "HW_PISNe_0"):
+	elif (input_model == "He0210_PISNe_0"):
 		m=[140,150,158,168,177,186,195,205,214,223,232,242,251,260]
-		dm=[9,9,9,9.5,9,9,9.5,9.5,9,9,9.5,9.5,9,9]
-	elif (input_model == "HW_SNe_0"):
+	elif (input_model == "He0210_SNe_0"):
 		m=[10,12,15,20,25,35,50,75,100,140,150,158,168,177,186,195,205,214,223,232,242,251,260]
-		dm=[1.5,2.5,4,5,7.5,12.5,20,25,32.5,25,9,9,9.5,9,9,9.5,9.5,9,9,9.5,9.5,9,9]
+	elif (input_model == "Su16_N20"):
+		m=[12.25, 12.5, 12.75, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 
+		14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.2, 15.7, 15.8, 
+		15.9, 16.0, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9, 17.0, 17.1, 
+		17.3, 17.4, 17.5, 17.6, 17.7, 17.9, 18.0, 18.1, 18.2, 18.3, 18.4, 18.5, 18.7, 
+		18.8, 18.9, 19.0, 19.1, 19.2, 19.3, 19.4, 19.7, 19.8, 20.1, 20.2, 20.3, 20.4, 
+		20.5, 20.6, 20.8, 21.0, 21.1, 21.2, 21.5, 21.6, 21.7, 25.2, 25.3, 25.4, 25.5, 
+		25.6, 25.7, 25.8, 25.9, 26.0, 26.1, 26.2, 26.3, 26.4, 26.5, 26.6, 26.7, 26.8, 
+		26.9, 27.0, 27.1, 27.2, 27.3, 27.4, 29.0, 29.1, 29.2, 29.6, 60, 80, 100, 120]
+	elif (input_model == "Su16_W18"):
+		m=[12.25, 12.5, 12.75, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 
+		14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.2, 15.7, 15.8, 
+		16.0, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9, 17.0, 17.1, 17.3, 
+		17.4, 17.5, 17.6, 17.9, 18.1, 18.2, 18.3, 18.4, 18.5, 19.2, 19.3, 19.7, 19.8, 
+		20.1, 20.2, 20.3, 20.4, 20.5, 20.8, 21.0, 21.1, 21.2, 21.5, 21.6, 25.2, 25.4, 
+		25.5, 25.6, 25.7, 25.8, 25.9, 26.0, 26.1, 26.2, 26.3, 26.4, 26.5, 27.0, 27.1, 
+		27.2, 27.3, 60, 120]
 
 	y=numpy.arange(len(elem_name))
 	y=y*0.0
@@ -703,60 +892,64 @@ def integrate_SNcc( input_model, alpha , elem_name ):
 	n=0
 
 	for el in elem_name:
-		if (input_model == "Nomoto_0"):
-			data_mod=numpy.loadtxt('SNcc/nomoto/0/'+str(el)+'.txt') #Open file
-		elif (input_model == "Nomoto_0.001"):
-			data_mod=numpy.loadtxt('SNcc/nomoto/0.001/'+str(el)+'.txt') #Open file
-		elif (input_model == "Nomoto_0.004"):
-			data_mod=numpy.loadtxt('SNcc/nomoto/0.004/'+str(el)+'.txt') #Open file
-		elif (input_model == "Nomoto_0.02"):
-			data_mod=numpy.loadtxt('SNcc/nomoto/0.02/'+str(el)+'.txt') #Open file
-		elif (input_model == "Chieffi_0"):
-			data_mod=numpy.loadtxt('SNcc/chieffi/0/'+str(el)+'.txt') #Open file
-		elif (input_model == "Chieffi_1E-6"):
-			data_mod=numpy.loadtxt('SNcc/chieffi/1E-6/'+str(el)+'.txt') #Open file
-		elif (input_model == "Chieffi_1E-4"):
-			data_mod=numpy.loadtxt('SNcc/chieffi/1E-4/'+str(el)+'.txt') #Open file
-		elif (input_model == "Chieffi_1E-3"):
-			data_mod=numpy.loadtxt('SNcc/chieffi/1E-3/'+str(el)+'.txt') #Open file
-		elif (input_model == "Chieffi_6E-3"):
-			data_mod=numpy.loadtxt('SNcc/chieffi/6E-3/'+str(el)+'.txt') #Open file
-		elif (input_model == "Chieffi_2E-2"):
-			data_mod=numpy.loadtxt('SNcc/chieffi/2E-2/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_SNcc_0"):
-			data_mod=numpy.loadtxt('SNcc/N13_SNcc/0/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_SNcc_0.001"):
-			data_mod=numpy.loadtxt('SNcc/N13_SNcc/0.001/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_SNcc_0.004"):
-			data_mod=numpy.loadtxt('SNcc/N13_SNcc/0.004/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_SNcc_0.008"):
-			data_mod=numpy.loadtxt('SNcc/N13_SNcc/0.008/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_SNcc_0.02"):
-			data_mod=numpy.loadtxt('SNcc/N13_SNcc/0.02/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_SNcc_0.05"):
-			data_mod=numpy.loadtxt('SNcc/N13_SNcc/0.05/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_PISNe_0"):
-			data_mod=numpy.loadtxt('SNcc/N13_PISNe/0/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_SNe_0"):
-			data_mod=numpy.loadtxt('SNcc/N13_SNe/0/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_HNe_0"):
-			data_mod=numpy.loadtxt('SNcc/N13_HNe/0/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_HNe_0.001"):
-			data_mod=numpy.loadtxt('SNcc/N13_HNe/0.001/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_HNe_0.004"):
-			data_mod=numpy.loadtxt('SNcc/N13_HNe/0.004/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_HNe_0.008"):
-			data_mod=numpy.loadtxt('SNcc/N13_HNe/0.008/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_HNe_0.02"):
-			data_mod=numpy.loadtxt('SNcc/N13_HNe/0.02/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_SNcc_0.05"):
-			data_mod=numpy.loadtxt('SNcc/N13_HNe/0.05/'+str(el)+'.txt') #Open file
-		elif (input_model == "HW_SNcc_0"):
-			data_mod=numpy.loadtxt('SNcc/heger_woosley_SNcc/0/'+str(el)+'.txt') #Open file
-		elif (input_model == "HW_PISNe_0"):
-			data_mod=numpy.loadtxt('SNcc/heger_woosley_PISNe/0/'+str(el)+'.txt') #Open file
-		elif (input_model == "HW_SNe_0"):
-			data_mod=numpy.loadtxt('SNcc/heger_woosley_SNe/0/'+str(el)+'.txt') #Open file
+		if (input_model == "No06_0"):
+			data_mod=numpy.loadtxt('SNcc/No06/0/'+str(el)+'.txt') #Open file
+		elif (input_model == "No06_0.001"):
+			data_mod=numpy.loadtxt('SNcc/No06/0.001/'+str(el)+'.txt') #Open file
+		elif (input_model == "No06_0.004"):
+			data_mod=numpy.loadtxt('SNcc/No06/0.004/'+str(el)+'.txt') #Open file
+		elif (input_model == "No06_0.02"):
+			data_mod=numpy.loadtxt('SNcc/No06/0.02/'+str(el)+'.txt') #Open file
+		elif (input_model == "Ch04_0"):
+			data_mod=numpy.loadtxt('SNcc/Ch04/0/'+str(el)+'.txt') #Open file
+		elif (input_model == "Ch04_1E-6"):
+			data_mod=numpy.loadtxt('SNcc/Ch04/1E-6/'+str(el)+'.txt') #Open file
+		elif (input_model == "Ch04_1E-4"):
+			data_mod=numpy.loadtxt('SNcc/Ch04/1E-4/'+str(el)+'.txt') #Open file
+		elif (input_model == "Ch04_1E-3"):
+			data_mod=numpy.loadtxt('SNcc/Ch04/1E-3/'+str(el)+'.txt') #Open file
+		elif (input_model == "Ch04_6E-3"):
+			data_mod=numpy.loadtxt('SNcc/Ch04/6E-3/'+str(el)+'.txt') #Open file
+		elif (input_model == "Ch04_2E-2"):
+			data_mod=numpy.loadtxt('SNcc/Ch04/2E-2/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_SNcc_0"):
+			data_mod=numpy.loadtxt('SNcc/No13_SNcc/0/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_SNcc_0.001"):
+			data_mod=numpy.loadtxt('SNcc/No13_SNcc/0.001/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_SNcc_0.004"):
+			data_mod=numpy.loadtxt('SNcc/No13_SNcc/0.004/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_SNcc_0.008"):
+			data_mod=numpy.loadtxt('SNcc/No13_SNcc/0.008/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_SNcc_0.02"):
+			data_mod=numpy.loadtxt('SNcc/No13_SNcc/0.02/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_SNcc_0.05"):
+			data_mod=numpy.loadtxt('SNcc/No13_SNcc/0.05/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_PISNe_0"):
+			data_mod=numpy.loadtxt('SNcc/No13_PISNe/0/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_SNe_0"):
+			data_mod=numpy.loadtxt('SNcc/No13_SNe/0/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_HNe_0"):
+			data_mod=numpy.loadtxt('SNcc/No13_HNe/0/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_HNe_0.001"):
+			data_mod=numpy.loadtxt('SNcc/No13_HNe/0.001/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_HNe_0.004"):
+			data_mod=numpy.loadtxt('SNcc/No13_HNe/0.004/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_HNe_0.008"):
+			data_mod=numpy.loadtxt('SNcc/No13_HNe/0.008/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_HNe_0.02"):
+			data_mod=numpy.loadtxt('SNcc/No13_HNe/0.02/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_SNcc_0.05"):
+			data_mod=numpy.loadtxt('SNcc/No13_HNe/0.05/'+str(el)+'.txt') #Open file
+		elif (input_model == "He0210_SNcc_0"):
+			data_mod=numpy.loadtxt('SNcc/He0210_SNcc/0/'+str(el)+'.txt') #Open file
+		elif (input_model == "He0210_PISNe_0"):
+			data_mod=numpy.loadtxt('SNcc/He0210_PISNe/0/'+str(el)+'.txt') #Open file
+		elif (input_model == "He0210_SNe_0"):
+			data_mod=numpy.loadtxt('SNcc/He0210_SNe/0/'+str(el)+'.txt') #Open file
+		elif (input_model == "Su16_N20"):
+			data_mod=numpy.loadtxt('SNcc/Su16/N20/'+str(el)+'.txt') #Open file
+		elif (input_model == "Su16_W18"):
+			data_mod=numpy.loadtxt('SNcc/Su16/W18/'+str(el)+'.txt') #Open file
 		else:
 			print "Error: The model", input_model, "does not exist, or could not be found."
 			sys.exit()
@@ -772,10 +965,8 @@ def integrate_SNcc( input_model, alpha , elem_name ):
 		sumt=0.
   		sumn=0.
 	    
-  		for i in numpy.arange(len(m)):    #Integration (see de Plaa+ 07)
-			sumt=sumt+yiel[i]*dm[i]*m[i]**(alpha)
-			sumn=sumn+dm[i]*m[i]**(alpha)
-
+		sumt=numpy.trapz(yiel*numpy.power(m,alpha), x=m)    #Integration "trapezoidal" (preferred)
+		sumn=numpy.trapz(numpy.power(m,alpha), x=m)
 
   		y[n]=sumt/sumn
   		n=n+1
@@ -785,16 +976,18 @@ def integrate_SNcc( input_model, alpha , elem_name ):
 
 
 
+
+
+
+
+
+
+
 ## Integrates the SNcc products over a mass range of 13-40 M_sun
 ## and assuming a certain IMF.
 def integrate_AGB( input_model, alpha , elem_name ):
 
-	if (input_model == "N13_AGB+SNcc_0"):
-		m=[0.9,1.0,1.25,1.5,1.75,1.9,2.0,2.25,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,11,13,15,18,20,25,30,40,100,140]
-		dm=[0.175,0.175,0.25,0.25,0.2,0.125,0.175,0.25,0.375,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,1.5,2,2.5,2.5,3.5,5,7.5,35,50,20]
-	else:
-		m=[0.9,1.0,1.25,1.5,1.75,1.9,2.0,2.25,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5,13,15,18,20,25,30,40]
-		dm=[0.175,0.175,0.25,0.25,0.2,0.125,0.175,0.25,0.375,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,2,2.5,2.5,3.5,5,7.5,10]
+	m=[0.9,1.0,1.25,1.5,1.75,1.9,2.0,2.25,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5]
 	y=numpy.arange(len(elem_name))
 	y=y*0.0
 
@@ -806,16 +999,16 @@ def integrate_AGB( input_model, alpha , elem_name ):
 	n=0
 
 	for el in elem_name:
-		if (input_model == "N13_AGB+SNcc_0"):
-			data_mod=numpy.loadtxt('AGB/N13_AGB+SNcc/0/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_AGB+SNcc_0.001"):
-			data_mod=numpy.loadtxt('AGB/N13_AGB+SNcc/0.001/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_AGB+SNcc_0.004"):
-			data_mod=numpy.loadtxt('AGB/N13_AGB+SNcc/0.004/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_AGB+SNcc_0.008"):
-			data_mod=numpy.loadtxt('AGB/N13_AGB+SNcc/0.008/'+str(el)+'.txt') #Open file
-		elif (input_model == "N13_AGB+SNcc_0.02"):
-			data_mod=numpy.loadtxt('AGB/N13_AGB+SNcc/0.02/'+str(el)+'.txt') #Open file
+		if (input_model == "No13_AGB_0"):
+			data_mod=numpy.loadtxt('AGB/No13_AGB/0/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_AGB_0.001"):
+			data_mod=numpy.loadtxt('AGB/No13_AGB/0.001/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_AGB_0.004"):
+			data_mod=numpy.loadtxt('AGB/No13_AGB/0.004/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_AGB_0.008"):
+			data_mod=numpy.loadtxt('AGB/No13_AGB/0.008/'+str(el)+'.txt') #Open file
+		elif (input_model == "No13_AGB_0.02"):
+			data_mod=numpy.loadtxt('AGB/No13_AGB/0.02/'+str(el)+'.txt') #Open file
 		else:
 			print "Error: The model", input_model, "does not exist, or could not be found."
 			sys.exit()
@@ -831,10 +1024,8 @@ def integrate_AGB( input_model, alpha , elem_name ):
 		sumt=0.
   		sumn=0.
 	    
-  		for i in numpy.arange(len(m)):    #Integration (see de Plaa+ 07)
-			sumt=sumt+yiel[i]*dm[i]*m[i]**(alpha)
-			sumn=sumn+dm[i]*m[i]**(alpha)
-
+		sumt=numpy.trapz(yiel*numpy.power(m,alpha), x=m)    #Integration "trapezoidal" (preferred)
+		sumn=numpy.trapz(numpy.power(m,alpha), x=m)
 
   		y[n]=sumt/sumn
   		n=n+1
@@ -878,16 +1069,16 @@ def sum_SNIa( SNIa_model , elements ):
 ## (letting the Fe relative contributions of the SNcc to 1)
 def extract_SNcc_contrib_1model( input_AGBSNcc_model , alpha , elem_name , mass , lodders , elements , bestSNe , cl_abun ):
 
-	if (input_AGBSNcc_model == "N13_AGB+SNcc_0"):
-		input_SNcc_model = "N13_SNcc_0"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.001"):
-		input_SNcc_model = "N13_SNcc_0.001"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.004"):
-		input_SNcc_model = "N13_SNcc_0.004"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.008"):
-		input_SNcc_model = "N13_SNcc_0.008"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.02"):
-		input_SNcc_model = "N13_SNcc_0.02"
+	if (input_AGBSNcc_model == "No13_AGB+SNcc_0"):
+		input_SNcc_model = "No13_SNcc_0"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.001"):
+		input_SNcc_model = "No13_SNcc_0.001"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.004"):
+		input_SNcc_model = "No13_SNcc_0.004"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.008"):
+		input_SNcc_model = "No13_SNcc_0.008"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.02"):
+		input_SNcc_model = "No13_SNcc_0.02"
 	else:
 		print "Error: The model", input_AGBSNcc_model, "does not exist, or could not be found."
 		sys.exit()
@@ -937,16 +1128,16 @@ def extract_SNcc_contrib_1model( input_AGBSNcc_model , alpha , elem_name , mass 
 ## (letting the Fe relative contributions of the 2 models unchanged)
 def extract_SNcc_contrib_2models( input_AGBSNcc_model, input_model2, alpha , elem_name , mass , lodders , elements , bestSNe , cl_abun ):
 
-	if (input_AGBSNcc_model == "N13_AGB+SNcc_0"):
-		input_SNcc_model = "N13_SNcc_0"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.001"):
-		input_SNcc_model = "N13_SNcc_0.001"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.004"):
-		input_SNcc_model = "N13_SNcc_0.004"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.008"):
-		input_SNcc_model = "N13_SNcc_0.008"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.02"):
-		input_SNcc_model = "N13_SNcc_0.02"
+	if (input_AGBSNcc_model == "No13_AGB+SNcc_0"):
+		input_SNcc_model = "No13_SNcc_0"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.001"):
+		input_SNcc_model = "No13_SNcc_0.001"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.004"):
+		input_SNcc_model = "No13_SNcc_0.004"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.008"):
+		input_SNcc_model = "No13_SNcc_0.008"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.02"):
+		input_SNcc_model = "No13_SNcc_0.02"
 	else:
 		print "Error: The model", input_AGBSNcc_model, "does not exist, or could not be found."
 		sys.exit()
@@ -1001,16 +1192,16 @@ def extract_SNcc_contrib_2models( input_AGBSNcc_model, input_model2, alpha , ele
 ## (letting the Fe relative contributions of the 3 models unchanged)
 def extract_SNcc_contrib_3models( input_AGBSNcc_model, input_model2, input_model3 , alpha , elem_name , mass , lodders , elements , bestSNe , cl_abun ):
 
-	if (input_AGBSNcc_model == "N13_AGB+SNcc_0"):
-		input_SNcc_model = "N13_SNcc_0"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.001"):
-		input_SNcc_model = "N13_SNcc_0.001"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.004"):
-		input_SNcc_model = "N13_SNcc_0.004"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.008"):
-		input_SNcc_model = "N13_SNcc_0.008"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.02"):
-		input_SNcc_model = "N13_SNcc_0.02"
+	if (input_AGBSNcc_model == "No13_AGB+SNcc_0"):
+		input_SNcc_model = "No13_SNcc_0"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.001"):
+		input_SNcc_model = "No13_SNcc_0.001"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.004"):
+		input_SNcc_model = "No13_SNcc_0.004"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.008"):
+		input_SNcc_model = "No13_SNcc_0.008"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.02"):
+		input_SNcc_model = "No13_SNcc_0.02"
 	else:
 		print "Error: The model", input_AGBSNcc_model, "does not exist, or could not be found."
 		sys.exit()
@@ -1069,16 +1260,16 @@ def extract_SNcc_contrib_3models( input_AGBSNcc_model, input_model2, input_model
 ## (letting the Fe relative contributions of the 4 models unchanged)
 def extract_SNcc_contrib_4models( input_AGBSNcc_model , input_model2 , input_model3 , input_model4 , alpha , elem_name , mass , lodders , elements , bestSNe , cl_abun ):
 
-	if (input_AGBSNcc_model == "N13_AGB+SNcc_0"):
-		input_SNcc_model = "N13_SNcc_0"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.001"):
-		input_SNcc_model = "N13_SNcc_0.001"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.004"):
-		input_SNcc_model = "N13_SNcc_0.004"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.008"):
-		input_SNcc_model = "N13_SNcc_0.008"
-	elif (input_AGBSNcc_model == "N13_AGB+SNcc_0.02"):
-		input_SNcc_model = "N13_SNcc_0.02"
+	if (input_AGBSNcc_model == "No13_AGB+SNcc_0"):
+		input_SNcc_model = "No13_SNcc_0"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.001"):
+		input_SNcc_model = "No13_SNcc_0.001"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.004"):
+		input_SNcc_model = "No13_SNcc_0.004"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.008"):
+		input_SNcc_model = "No13_SNcc_0.008"
+	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.02"):
+		input_SNcc_model = "No13_SNcc_0.02"
 	else:
 		print "Error: The model", input_AGBSNcc_model, "does not exist, or could not be found."
 		sys.exit()
@@ -1185,8 +1376,7 @@ def fitfunc2(SNe,modmatrix, cl_abun):
 		sys.exit("Error: Fe abundance not found in", inputfile, ".")
 
 	SNe[1]=(cl_abun[Fe_index,1]-SNe[0]*modmatrix[0,Fe_index])/modmatrix[1,Fe_index]
-	return (cl_abun[:,1] - numpy.dot(SNe,modmatrix))
-
+	return ((cl_abun[:,1] - numpy.dot(SNe,modmatrix))/cl_abun[:,2])**2
 
 
 
@@ -1203,7 +1393,7 @@ def fitfunc3(SNe,modmatrix, cl_abun):
 		sys.exit("Error: Fe abundance not found in", inputfile, ".")
 
 	SNe[2]=(cl_abun[Fe_index,1]-SNe[0]*modmatrix[0,Fe_index]-SNe[1]*modmatrix[1,Fe_index])/modmatrix[2,Fe_index]
-	return (cl_abun[:,1] - numpy.dot(SNe,modmatrix))
+	return ((cl_abun[:,1] - numpy.dot(SNe,modmatrix))/cl_abun[:,2])**2
 
 
 
@@ -1222,7 +1412,7 @@ def fitfunc4(SNe,modmatrix, cl_abun):
 		sys.exit("Error: Fe abundance not found in", inputfile, ".")
 
 	SNe[3]=(cl_abun[Fe_index,1]-SNe[0]*modmatrix[0,Fe_index]-SNe[1]*modmatrix[1,Fe_index]-SNe[2]*modmatrix[2,Fe_index])/modmatrix[3,Fe_index]
-	return (cl_abun[:,1] - numpy.dot(SNe,modmatrix))
+	return ((cl_abun[:,1] - numpy.dot(SNe,modmatrix))/cl_abun[:,2])**2
 
 
 
@@ -1231,7 +1421,7 @@ def remove_end_char(s):
 	return s[:-1]
 
 
-## Give to each considered element its respective name.
+## Gives to each considered element its respective name.
 def elem_name(elements):
 	elem_name = [None]*len(elements)
 	for i in range(len(elements)):
@@ -1301,11 +1491,292 @@ def elem_name(elements):
 
 
 
+## Rescales the maximum value of the y-axis displayed in the final plot.
+def rescale_ymax(number_of_models, bestfit, data, errors):
+	bestfit1 = numpy.array_split(bestfit,2)[0]
+	bestfit2 = numpy.array_split(bestfit,2)[1]
+	data1 = numpy.array_split(data,2)[0]
+	data2 = numpy.array_split(data,2)[1]
+	errors1 = numpy.array_split(errors,2)[0]
+	errors2 = numpy.array_split(errors,2)[1]
+	if number_of_models==1:
+		if numpy.max(bestfit1[:]) < 1.7 and numpy.max(data1[:]+errors1[:]) < 1.7 and \
+		numpy.max(bestfit2[:]) < 1.75 and numpy.max(data2[:]+errors2[:]) < 1.75:
+			ymax = 2.0
+		elif numpy.max(bestfit1[:]) < 1.87 and numpy.max(data1[:]+errors1[:]) < 1.87 and \
+		numpy.max(bestfit2[:]) < 1.925 and numpy.max(data2[:]+errors2[:]) < 1.925:
+			ymax = 2.2
+		elif numpy.max(bestfit1[:]) < 2.04 and numpy.max(data1[:]+errors1[:]) < 2.04 and \
+		numpy.max(bestfit2[:]) < 2.1 and numpy.max(data2[:]+errors2[:]) < 2.1:
+			ymax = 2.4
+		elif numpy.max(bestfit1[:]) < 2.21 and numpy.max(data1[:]+errors1[:]) < 2.21 and \
+		numpy.max(bestfit2[:]) < 2.275 and numpy.max(data2[:]+errors2[:]) < 2.275:
+			ymax = 2.6
+		elif numpy.max(bestfit1[:]) < 2.38 and numpy.max(data1[:]+errors1[:]) < 2.38 and \
+		numpy.max(bestfit2[:]) < 2.45 and numpy.max(data2[:]+errors2[:]) < 2.45:
+			ymax = 2.8
+		elif numpy.max(bestfit1[:]) < 2.55 and numpy.max(data1[:]+errors1[:]) < 2.55 and \
+		numpy.max(bestfit2[:]) < 2.625 and numpy.max(data2[:]+errors2[:]) < 2.625:
+			ymax = 3.0
+		elif numpy.max(bestfit1[:]) < 2.975 and numpy.max(data1[:]+errors1[:]) < 2.975 and \
+		numpy.max(bestfit2[:]) < 3.0625 and numpy.max(data2[:]+errors2[:]) < 3.0625:
+			ymax = 3.5
+		elif numpy.max(bestfit1[:]) < 3.4 and numpy.max(data1[:]+errors1[:]) < 3.4 and \
+		numpy.max(bestfit2[:]) < 3.5 and numpy.max(data2[:]+errors2[:]) < 3.5:
+			ymax = 4.0
+		elif numpy.max(bestfit1[:]) < 4.25 and numpy.max(data1[:]+errors1[:]) < 4.25 and \
+		numpy.max(bestfit2[:]) < 4.375 and numpy.max(data2[:]+errors2[:]) < 4.375:
+			ymax = 5.0
+		elif numpy.max(bestfit1[:]) < 8.5 and numpy.max(data1[:]+errors1[:]) < 8.5 and \
+		numpy.max(bestfit2[:]) < 8.75 and numpy.max(data2[:]+errors2[:]) < 8.75:
+			ymax = 10.0
+		elif numpy.max(bestfit1[:]) < 12.75 and numpy.max(data1[:]+errors1[:]) < 12.75 and \
+		numpy.max(bestfit2[:]) < 13.125 and numpy.max(data2[:]+errors2[:]) < 13.125:
+			ymax = 15.0
+		else:
+			ymax = 20.0
+	if number_of_models==2:
+		if numpy.max(bestfit1[:]) < 1.6 and numpy.max(data1[:]+errors1[:]) < 1.6 and \
+		numpy.max(bestfit2[:]) < 1.75 and numpy.max(data2[:]+errors2[:]) < 1.75:
+			ymax = 2.0
+		elif numpy.max(bestfit1[:]) < 1.76 and numpy.max(data1[:]+errors1[:]) < 1.76 and \
+		numpy.max(bestfit2[:]) < 1.925 and numpy.max(data2[:]+errors2[:]) < 1.925:
+			ymax = 2.2
+		elif numpy.max(bestfit1[:]) < 1.92 and numpy.max(data1[:]+errors1[:]) < 1.92 and \
+		numpy.max(bestfit2[:]) < 2.1 and numpy.max(data2[:]+errors2[:]) < 2.1:
+			ymax = 2.4
+		elif numpy.max(bestfit1[:]) < 2.08 and numpy.max(data1[:]+errors1[:]) < 2.08 and \
+		numpy.max(bestfit2[:]) < 2.275 and numpy.max(data2[:]+errors2[:]) < 2.275:
+			ymax = 2.6
+		elif numpy.max(bestfit1[:]) < 2.24 and numpy.max(data1[:]+errors1[:]) < 2.24 and \
+		numpy.max(bestfit2[:]) < 2.45 and numpy.max(data2[:]+errors2[:]) < 2.45:
+			ymax = 2.8
+		elif numpy.max(bestfit1[:]) < 2.4 and numpy.max(data1[:]+errors1[:]) < 2.4 and \
+		numpy.max(bestfit2[:]) < 2.625 and numpy.max(data2[:]+errors2[:]) < 2.625:
+			ymax = 3.0
+		elif numpy.max(bestfit1[:]) < 2.8 and numpy.max(data1[:]+errors1[:]) < 2.8 and \
+		numpy.max(bestfit2[:]) < 3.0625 and numpy.max(data2[:]+errors2[:]) < 3.0625:
+			ymax = 3.5
+		elif numpy.max(bestfit1[:]) < 3.2 and numpy.max(data1[:]+errors1[:]) < 3.2 and \
+		numpy.max(bestfit2[:]) < 3.5 and numpy.max(data2[:]+errors2[:]) < 3.5:
+			ymax = 4.0
+		elif numpy.max(bestfit1[:]) < 1.0 and numpy.max(data1[:]+errors1[:]) < 4.0 and \
+		numpy.max(bestfit2[:]) < 4.375 and numpy.max(data2[:]+errors2[:]) < 4.375:
+			ymax = 5.0
+		elif numpy.max(bestfit1[:]) < 8.0 and numpy.max(data1[:]+errors1[:]) < 8.0 and \
+		numpy.max(bestfit2[:]) < 8.75 and numpy.max(data2[:]+errors2[:]) < 8.75:
+			ymax = 10.0
+		elif numpy.max(bestfit1[:]) < 12.0 and numpy.max(data1[:]+errors1[:]) < 12.0 and \
+		numpy.max(bestfit2[:]) < 13.125 and numpy.max(data2[:]+errors2[:]) < 13.125:
+			ymax = 15.0
+		else:
+			ymax = 20.0
+	if number_of_models==3:
+		if numpy.max(bestfit1[:]) < 1.5 and numpy.max(data1[:]+errors1[:]) < 1.5 and \
+		numpy.max(bestfit2[:]) < 1.75 and numpy.max(data2[:]+errors2[:]) < 1.75:
+			ymax = 2.0
+		elif numpy.max(bestfit1[:]) < 1.65 and numpy.max(data1[:]+errors1[:]) < 1.65 and \
+		numpy.max(bestfit2[:]) < 1.925 and numpy.max(data2[:]+errors2[:]) < 1.925:
+			ymax = 2.2
+		elif numpy.max(bestfit1[:]) < 1.8 and numpy.max(data1[:]+errors1[:]) < 1.8 and \
+		numpy.max(bestfit2[:]) < 2.1 and numpy.max(data2[:]+errors2[:]) < 2.1:
+			ymax = 2.4
+		elif numpy.max(bestfit1[:]) < 1.95 and numpy.max(data1[:]+errors1[:]) < 1.95 and \
+		numpy.max(bestfit2[:]) < 2.275 and numpy.max(data2[:]+errors2[:]) < 2.275:
+			ymax = 2.6
+		elif numpy.max(bestfit1[:]) < 2.1 and numpy.max(data1[:]+errors1[:]) < 2.1 and \
+		numpy.max(bestfit2[:]) < 2.45 and numpy.max(data2[:]+errors2[:]) < 2.45:
+			ymax = 2.8
+		elif numpy.max(bestfit1[:]) < 2.25 and numpy.max(data1[:]+errors1[:]) < 2.25 and \
+		numpy.max(bestfit2[:]) < 2.625 and numpy.max(data2[:]+errors2[:]) < 2.625:
+			ymax = 3.0
+		elif numpy.max(bestfit1[:]) < 2.625 and numpy.max(data1[:]+errors1[:]) < 2.625 and \
+		numpy.max(bestfit2[:]) < 3.0625 and numpy.max(data2[:]+errors2[:]) < 3.0625:
+			ymax = 3.5
+		elif numpy.max(bestfit1[:]) < 3.0 and numpy.max(data1[:]+errors1[:]) < 3.0 and \
+		numpy.max(bestfit2[:]) < 3.5 and numpy.max(data2[:]+errors2[:]) < 3.5:
+			ymax = 4.0
+		elif numpy.max(bestfit1[:]) < 3.75 and numpy.max(data1[:]+errors1[:]) < 3.75 and \
+		numpy.max(bestfit2[:]) < 4.375 and numpy.max(data2[:]+errors2[:]) < 4.375:
+			ymax = 5.0
+		elif numpy.max(bestfit1[:]) < 7.5 and numpy.max(data1[:]+errors1[:]) < 7.5 and \
+		numpy.max(bestfit2[:]) < 8.75 and numpy.max(data2[:]+errors2[:]) < 8.75:
+			ymax = 10.0
+		elif numpy.max(bestfit1[:]) < 11.25 and numpy.max(data1[:]+errors1[:]) < 11.25 and \
+		numpy.max(bestfit2[:]) < 13.125 and numpy.max(data2[:]+errors2[:]) < 13.125:
+			ymax = 15.0
+		else:
+			ymax = 20.0
+	if number_of_models==4:
+		if numpy.max(bestfit1[:]) < 1.4 and numpy.max(data1[:]+errors1[:]) < 1.4 and \
+		numpy.max(bestfit2[:]) < 1.75 and numpy.max(data2[:]+errors2[:]) < 1.75:
+			ymax = 2.0
+		elif numpy.max(bestfit1[:]) < 1.54 and numpy.max(data1[:]+errors1[:]) < 1.54 and \
+		numpy.max(bestfit2[:]) < 1.925 and numpy.max(data2[:]+errors2[:]) < 1.925:
+			ymax = 2.2
+		elif numpy.max(bestfit1[:]) < 1.68 and numpy.max(data1[:]+errors1[:]) < 1.68 and \
+		numpy.max(bestfit2[:]) < 2.1 and numpy.max(data2[:]+errors2[:]) < 2.1:
+			ymax = 2.4
+		elif numpy.max(bestfit1[:]) < 1.82 and numpy.max(data1[:]+errors1[:]) < 1.82 and \
+		numpy.max(bestfit2[:]) < 2.275 and numpy.max(data2[:]+errors2[:]) < 2.275:
+			ymax = 2.6
+		elif numpy.max(bestfit1[:]) < 1.96 and numpy.max(data1[:]+errors1[:]) < 1.96 and \
+		numpy.max(bestfit2[:]) < 2.45 and numpy.max(data2[:]+errors2[:]) < 2.45:
+			ymax = 2.8
+		elif numpy.max(bestfit1[:]) < 2.1 and numpy.max(data1[:]+errors1[:]) < 2.1 and \
+		numpy.max(bestfit2[:]) < 2.625 and numpy.max(data2[:]+errors2[:]) < 2.625:
+			ymax = 3.0
+		elif numpy.max(bestfit1[:]) < 2.45 and numpy.max(data1[:]+errors1[:]) < 2.45 and \
+		numpy.max(bestfit2[:]) < 3.0625 and numpy.max(data2[:]+errors2[:]) < 3.0625:
+			ymax = 3.5
+		elif numpy.max(bestfit1[:]) < 2.8 and numpy.max(data1[:]+errors1[:]) < 2.8 and \
+		numpy.max(bestfit2[:]) < 3.5 and numpy.max(data2[:]+errors2[:]) < 3.5:
+			ymax = 4.0
+		elif numpy.max(bestfit1[:]) < 3.5 and numpy.max(data1[:]+errors1[:]) < 3.5 and \
+		numpy.max(bestfit2[:]) < 4.375 and numpy.max(data2[:]+errors2[:]) < 4.375:
+			ymax = 5.0
+		elif numpy.max(bestfit1[:]) < 7.0 and numpy.max(data1[:]+errors1[:]) < 7.0 and \
+		numpy.max(bestfit2[:]) < 8.75 and numpy.max(data2[:]+errors2[:]) < 8.75:
+			ymax = 10.0
+		elif numpy.max(bestfit1[:]) < 10.5 and numpy.max(data1[:]+errors1[:]) < 10.5 and \
+		numpy.max(bestfit2[:]) < 13.125 and numpy.max(data2[:]+errors2[:]) < 13.125:
+			ymax = 15.0
+		else:
+			ymax = 20.0
+	return ymax
 
 
+## Adds a "(SNIa)", "(SNcc)", or "(AGB)" after the name of each model (for the legend of the plot)
+def rename_model(input_mod, list_models_SNIa, list_models_SNcc, list_models_AGB):
+	if (input_mod in list_models_SNIa):
+		input_mod = input_mod+" (SNIa)"
+	elif (input_mod in list_models_SNcc):
+		input_mod = input_mod+" (SNcc)"
+	else:
+		input_mod = input_mod+" (AGB)"
+	return input_mod
+
+## Selects a color for models and avoid conflicts in case of several models from the same type  (for the legend of the plot)
+def set_colors_1(input_mod_1, default_color_SNIa, default_color_SNcc, default_color_AGB):
+	f4 = file("list_models_SNIa.txt")
+	lines = f4.readlines()
+	list_models_SNIa = [remove_end_char(s) for s in lines]
+	f5 = file("list_models_SNcc.txt")
+	lines = f5.readlines()
+	list_models_SNcc = [remove_end_char(s) for s in lines]
+	f6 = file("list_models_AGB.txt")
+	lines = f6.readlines()
+	list_models_AGB = [remove_end_char(s) for s in lines]
+
+	if (input_mod_1 in list_models_SNIa):
+		color1 = default_color_SNIa
+	elif (input_mod_1 in list_models_SNcc):
+		color1 = default_color_SNcc
+	else:
+		color1 = default_color_AGB
+	return color1
 
 
+## Selects a color for models and avoid conflicts in case of several models from the same type  (for the legend of the plot)
+def set_colors_2(input_mod_1, input_mod_2, default_color_SNIa, default_color_SNcc, default_color_AGB):
+	f4 = file("list_models_SNIa.txt")
+	lines = f4.readlines()
+	list_models_SNIa = [remove_end_char(s) for s in lines]
+	f5 = file("list_models_SNcc.txt")
+	lines = f5.readlines()
+	list_models_SNcc = [remove_end_char(s) for s in lines]
+	f6 = file("list_models_AGB.txt")
+	lines = f6.readlines()
+	list_models_AGB = [remove_end_char(s) for s in lines]
 
+	color2 = ["aaa", "bbb"]
+	color2[0] = set_colors_1(input_mod_1, default_color_SNIa, default_color_SNcc, default_color_AGB)
+
+	if (input_mod_2 in list_models_SNIa):
+		if (input_mod_1 in list_models_SNIa):
+			color2[1] = "darkblue"
+		else:
+			color2[1] = default_color_SNIa
+	elif (input_mod_2 in list_models_SNcc):
+		if (input_mod_1 in list_models_SNcc):
+			color2[1] = "darkviolet"
+		else:
+			color2[1] = default_color_SNcc
+	elif (input_mod_2 in list_models_AGB):
+		if (input_mod_1 in list_models_AGB):
+			color2[1] = "orange"
+		else:
+			color2[1] = default_color_AGB
+	return color2
+
+
+## Selects a color for models and avoid conflicts in case of several models from the same type  (for the legend of the plot)
+def set_colors_3(input_mod_1, input_mod_2, input_mod_3, default_color_SNIa, default_color_SNcc, default_color_AGB):
+	f4 = file("list_models_SNIa.txt")
+	lines = f4.readlines()
+	list_models_SNIa = [remove_end_char(s) for s in lines]
+	f5 = file("list_models_SNcc.txt")
+	lines = f5.readlines()
+	list_models_SNcc = [remove_end_char(s) for s in lines]
+	f6 = file("list_models_AGB.txt")
+	lines = f6.readlines()
+	list_models_AGB = [remove_end_char(s) for s in lines]
+
+	color3 = ["aaa", "bbb", "ccc"]
+	color3[0:2] = set_colors_2(input_mod_1, input_mod_2, default_color_SNIa, default_color_SNcc, default_color_AGB)
+
+	if (input_mod_3 in list_models_SNIa):
+		if (input_mod_1 in list_models_SNIa) or (input_mod_2 in list_models_SNIa):
+			color3[2] = "green"
+		else:
+			color3[2] = default_color_SNIa
+	elif (input_mod_3 in list_models_SNcc):
+		if (input_mod_1 in list_models_SNcc) or (input_mod_2 in list_models_SNcc):
+			color3[2] = "mediumpurple"
+		else:
+			color3[2] = default_color_SNcc
+	else:
+		if (input_mod_1 in list_models_AGB) or (input_mod_2 in list_models_AGB):
+			color3[2] = "red"
+		else:
+			color3[2] = default_color_AGB
+	return color3
+
+
+## Selects a color for models and avoid conflicts in case of several models from the same type  (for the legend of the plot)
+def set_colors_4(input_mod_1, input_mod_2, input_mod_3, input_mod_4):
+	f4 = file("list_models_SNIa.txt")
+	lines = f4.readlines()
+	list_models_SNIa = [remove_end_char(s) for s in lines]
+	f5 = file("list_models_SNcc.txt")
+	lines = f5.readlines()
+	list_models_SNcc = [remove_end_char(s) for s in lines]
+	f6 = file("list_models_AGB.txt")
+	lines = f6.readlines()
+	list_models_AGB = [remove_end_char(s) for s in lines]
+
+	color4 = ["aaa", "bbb", "ccc", "ddd"]
+	color4[0:3] = set_colors_3(input_mod_1, input_mod_2, input_mod_3, default_color_SNIa, default_color_SNcc, default_color_AGB)
+
+	if (input_mod_4 in list_models_SNIa):
+		if (input_mod_1 in list_models_SNIa) or (input_mod_2 in list_models_SNIa) \
+		or (input_mod_3 in list_models_SNIa):
+			color4[3] = "gray"
+		else:
+			color4[3] = default_color_SNIa
+	elif (input_mod_3 in list_models_SNcc):
+		if (input_mod_1 in list_models_SNcc) or (input_mod_2 in list_models_SNcc) \
+		or (input_mod_3 in list_models_SNcc):
+			color4[3] = "gray"
+		else:
+			color4[3] = default_color_SNcc
+	else:
+		if (input_mod_1 in list_models_AGB) or (input_mod_2 in list_models_AGB) \
+		or (input_mod_3 in list_models_AGB):
+			color4[3] = "gray"
+		else:
+			color4[3] = default_color_AGB
+	return color4
 
 
    
