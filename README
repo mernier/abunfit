@@ -2,10 +2,16 @@
 	/! If you use abunfit.py for a publication, please cite: 
 				-Mernier, F., de Plaa, J., Pinto, et al. 2016b, A&A, 595, A126
 
-	/! If you use the abundance measurements reported in abunfit/cluster/ for a publication, please cite: 
-				-Mernier, F., de Plaa, J., Pinto, et al. 2016a, A&A, 592, A157
+	/! If you use the abundance measurements reported in abunfit/data/ for a publication, please cite the 
+	   following papers accordingly: 
+				- de Plaa, J., Werner, N., Bleeker, J. A. M. et al., 2007, A&A, 465, 345
+				- Mernier, F., de Plaa, J., Pinto, C. et al., 2016a, A&A, 592, A157 
+				- Hitomi Collaboration, 2017, Nature, 551, 478
+				- Simionescu, A., Nakashima, S., Yamaguchi, Y. et al., 2018, MNRAS, submitted
+				- Mernier, F., Werner, N., de Plaa, J. et al., 2018b, MNRAS, 480, L95
 
-	/! If you use the supernova yields reported in abunfit/ for a publication, please cite the original papers accordingly.
+	/! If you use the supernova yields reported in abunfit/ for a publication, please cite the original 
+	   papers accordingly.
 
 
 
