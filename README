@@ -436,9 +436,11 @@ CONTENTS OF THIS DIRECTORY
 				/!\ Each new run of abunfit.py will overwrite the pre-exisiting output files!
 
 		- serial_fitter.sh	Bash script running a series of abundance fits (abunfit.py) with 
-					various yield models and/or IMF slopes. All the tested combinations 
-					are then folded by increasing chi^2 (via the routine 
-					sort_fitting_results.py) into fitting_results_sorted.txt.
+					various yield models and/or IMF slopes. All the tested combinations are then 
+					folded by increasing chi^2 (via the routine sort_fitting_results.py) into 
+					fitting_results_sorted.txt. The argument --disable-plot should be used to make
+					this script work properly. The user should feel free to edit this script example
+					and adapt it to their own needs.
 
 
 
