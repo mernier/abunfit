@@ -403,21 +403,25 @@ CONTENTS OF THIS DIRECTORY
 				- A table containing the atomic mass of each element (atomic_masses.txt).
 
 				The static parameters (which can be changed in abunfit.py) are:
-				- plotting_mode: If True, a plot of the measurements and the best-fit models is 
-				  displayed. Moreover, the plot is saved in fig_output.pdf. It may be useful to 
-				  set plotting_mode = False when the user wants to use abunfit.py multiple times 
-				  (for example when using serial_fitter.sh, see below).
-				- default_color_[SNIa/SNcc/AGB]: If plotting_mode = True, these parameters set 
-				  the default color for each type of models.
+				- abun_table: Defines the abundance table used for the calculations. So far, only 
+				  the reference tables of Lodders et al. (2009, default table) and 
+				  Anders & Grevesse (1989) are available, however the user can add and use their own 
+				  preferred table. Please refer to solar_tables/lodders09.txt for an example of 
+				  the structure of the file.
 				- alpha_SNcc_equiv_AGB: If True, the IMF-integration of the AGB yields will be 
 				  calculated following the same slope as defined in the command line (i.e. as for 
 				  SNcc models).
 				- alpha_AGB: If alpha_SNcc_equiv_AGB = False, the slope of the IMF needed for 
 				  integrating the AGB yields can be set via this parameter. 
-				- abun_table: Defines the abundance table used for the calculations. So far, only 
-				  the reference table of Lodders et al. (2009) is available, however the user is 
-				  welcome to use their own table. Please refer to lodders09.txt for an example of 
-				  the structure of the file.
+				- plotting_mode: Set as True by default, a plot of the measurements and the best-fit 
+				  models is displayed. The plot is saved as PDF in fig_output.pdf. It may be useful to 
+				  set plotting_mode = False when the user wants to use abunfit.py multiple times 
+				  (for example when using serial_fitter.sh, see below). To do so, the argument --disable-plot
+				  should be added at the end of the abunfit terminal command line.
+				- default_color_[SNIa/SNcc/AGB]: If plotting_mode = True, these parameters set 
+				  the default color for each type of models.
+
+
 
 				The output files are:
 				- fig_output.pdf: If plotting_mode = True, a PDF version of the plot is saved 
