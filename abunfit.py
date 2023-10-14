@@ -30,9 +30,9 @@ def main():
 		sys.exit("Error: Uncorrect arguments.\n\n \
 		PROGRAM: abunfit.py\n\n\n \
 		SYNOPSIS: python abunfit.py [input_file] [number_of_models] [alpha] [SNe_model_1] [SNe_model_2] ... (--disable-plot) \n\n\n \
-		DESCRIPTION: Fits a set of intra-cluster abundances with a combination of \n \
-		supernovae (SNe) yields models. Several models (either SNcc or SNIa) are available \n \
-		and can be updated or created.\n\n\n \
+		DESCRIPTION: Fits any set of intracluster abundance ratios (X/Fe) with a combination of \n \
+		supernovae (SNe) yield models. Several models (SNcc, SNIa, and/or AGB) are available \n \
+		and can be updated or added by the user.\n\n\n \
 		ARGUMENTS: \n\n \
 		        [input_file] -- (Location of the) Text input file of the set of measured  \n \
 		                        ICM abundances. This file must contain 3 columns:  \n \
