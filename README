@@ -416,8 +416,8 @@ CONTENTS OF THIS DIRECTORY
 				- plotting_mode: Set as True by default, a plot of the measurements and the best-fit 
 				  models is displayed. The plot is saved as PDF in fig_output.pdf. It may be useful to 
 				  set plotting_mode = False when the user wants to use abunfit.py multiple times 
-				  (for example when using serial_fitter.sh, see below). To do so, the argument --disable-plot
-				  should be added at the end of the abunfit terminal command line.
+				  (for example when using serial_fitter.sh, see below). To do so, the argument 
+				  --disable-plot should be added at the end of the abunfit terminal command line.
 				- default_color_[SNIa/SNcc/AGB]: If plotting_mode = True, these parameters set 
 				  the default color for each type of models.
 
@@ -439,8 +439,8 @@ CONTENTS OF THIS DIRECTORY
 					various yield models and/or IMF slopes. All the tested combinations are then 
 					folded by increasing chi^2 (via the routine sort_fitting_results.py) into 
 					fitting_results_sorted.txt. The argument --disable-plot should be used to make
-					this script work properly. The user should feel free to edit this script example
-					and adapt it to their own needs.
+					this script work properly. The user should feel free to edit this script
+					example and adapt it to their own needs.
 
 
 
