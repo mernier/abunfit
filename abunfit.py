@@ -8,20 +8,18 @@ import scipy.optimize as optimization
 import matplotlib
 import matplotlib.pyplot as plt
 
-
 def main():
+
 	####### User parameters #######
 
-	plotting_mode = True		# Plot a figure with the best-fit models and save it into "fig_output.pdf"
-
-	default_color_SNIa = "#4881ea"	# In plotting mode, the default color for the first SNIa model (if any)
-	default_color_SNcc = "violet"	# In plotting mode, the default color for the first SNcc model (if any)
-	default_color_AGB = "gold"	# In plotting mode, the default color for the first AGB model (if any)
+	abun_table = "solar_tables/lodders09.txt"	# Table of reference (solar) abundances
 
 	alpha_SNcc_equiv_AGB = True	# If true, AGB model(s) follow the same IMF as for SNcc models
 	alpha_AGB = -2.35		# Slope of the IMF for AGB model(s), if alpha_SNcc_equiv_AGB = False
 
-	abun_table = "lodders09.txt"	# Table of reference (solar) abundances
+	default_color_SNIa = "#4881ea"	# In plotting mode, the default color for the first SNIa model (if any)
+	default_color_SNcc = "violet"	# In plotting mode, the default color for the first SNcc model (if any)
+	default_color_AGB = "gold"	# In plotting mode, the default color for the first AGB model (if any)
 
 	###############################
 
@@ -30,11 +28,11 @@ def main():
 
 	if len(sys.argv) < 4:
 		sys.exit("Error: Uncorrect arguments.\n\n \
-		PROGRAM: abunfit.py\n\n \
-		SYNOPSIS: ./abunfit_dual.py [input_file] [number_of_models] [alpha] [SNe_model_1] [SNe_model_2] ... \n\n \
+		PROGRAM: abunfit.py\n\n\n \
+		SYNOPSIS: ./abunfit.py [input_file] [number_of_models] [alpha] [SNe_model_1] [SNe_model_2] ... (--disable-plot) \n\n\n \
 		DESCRIPTION: Fits a set of intra-cluster abundances with a combination of \n \
 		supernovae (SNe) yields models. Several models (either SNcc or SNIa) are available \n \
-		and can be updated or created.\n\n \
+		and can be updated or created.\n\n\n \
 		ARGUMENTS: \n\n \
 		        [input_file] -- (Location of the) Text input file of the set of measured  \n \
 		                        ICM abundances. This file must contain 3 columns:  \n \
@@ -42,9 +40,9 @@ def main():
 		                        (2) the measured abundance, and \n \
 		                        (3) its associated (symmetrical) uncertainties.\n\n \
 		        [number_of_models] -- Integer indicating the number of models to\n \
- 			                       be fitted simultaneously (min: 1, max: 4).\n \
+ 			                       be fitted simultaneously (min: 1, max: 4).\n\n \
 		        [alpha] -- Slope index of the assumed initial mass function (IMF). \n \
-		                   Ex: for Salpeter IMF, alpha = -2.35.\n \
+		                   Ex: for Salpeter IMF, alpha = -2.35.\n\n \
 		        [model<1/2/...>] -- Name of the model. Currently available models: \n \
 		                            ==============\n \
 		                            ==== SNIa ====\n \
@@ -89,6 +87,8 @@ def main():
 		                             - Se13_N100_Z0.5\n \
 		                             - Se13_N100_Z0.1\n \
 		                             - Se13_N100_Z0.01\n \
+		                            == Thielmann et al. (2010) \n \
+		                            - Thielmann_03 \n \
 		                            == Fink et al. (2014)\n \
 		                               (3-D deflagration explosion models...)\n \
 		                             - Fi14_N1def\n \
@@ -211,6 +211,12 @@ def main():
 		                             - No06_0.001\n \
 		                             - No06_0.004\n \
 		                             - No06_0.02\n \
+		                            == Romano et al. (2010) \n \
+		                             - Ro10_0 \n \
+		                             - Ro10_0.000002 \n \
+		                             - Ro10_0.0002 \n \
+		                             - Ro10_0.002 \n \
+		                             - Ro10_0.02 \n \
 		                            == Nomoto et al. (2013)\n \
 		                               (One initial metallicity per model...)\n \
 		                             = SNcc: 11 - 40 (140) M_sun\n \
@@ -245,6 +251,11 @@ def main():
 		                            ===================\n \
 		                            ==== AGB stars ====\n \
 		                            ===================\n \
+		                            == Karakas et al. (2010) \n \
+		                             - K10_AGB_0.0001 \n \
+		                             - K10_AGB_0.004 \n \
+		                             - K10_AGB_0.008 \n \
+		                             - K10_AGB_0.02 \n \
 		                            == Nomoto et al. (2013)\n \
 		                               (One initial metallicity per model...)\n \
 		                             = AGB: 0.9 - 6.5 M_sun (adapted from Karakas 2010)\n \
@@ -252,34 +263,63 @@ def main():
 		                              - No13_AGB_0.004\n \
 		                              - No13_AGB_0.008\n \
 		                              - No13_AGB_0.02\n\n \
-		EXAMPLE: ./abunfit.py data/CHEERS_Mernier18b.out 2 -2.35 No13_SNcc_0.02 Se13_N100\n\n \
-		VERSION: 2.0 (November 2018)\n \
+		        --disable-plot -- If this argument ends the command line, \n \
+		        		  no plot is displayed after the fit \n \
+		        		  (useful for fitting in series, e.g. using serial_fitter.sh) \n\n\n \
+		EXAMPLES: python abunfit.py data/CHEERS_Mernier18b.dat 2 -2.35 No13_SNcc_0.02 Se13_N100\n \
+			  	--> Fits two models (1 SNcc + 1 SNIa) to the CHEERS abundance ratios \n \
+			  	    (Mernier et al. 2018) assuming a Salpeter IMF. \n\n \
+			  python abunfit.py data/CHEERS_Mernier18b.dat 2 -2.35 No13_SNcc_0.02 Se13_N100 --disable-plot\n \
+			  	--> Same as above with the plotting option disabled. \n\n \
+			  python abunfit.py data/proto-solar_Lodders09.dat 3 -2.35 No13_AGB_0.02 No13_SNcc_0.02 Se13_N100\n \
+			  	--> Fits three models (1 AGB + 1 SNcc + 1 SNIa) to the proto-solar ratios \n \
+			  	    (Lodders et al. 2009) assuming a Salpeter IMF. \n\n \
+			  python abunfit.py data/proto-solar_Lodders09.dat 3 -2.35 No13_AGB_0.02 No13_SNcc_0.02 Se13_N100\n \
+			  	--> Same as above, now assuming a top-heavy IMF. \n\n\n \
+		VERSION: 3.0 (October 2023)\n \
+		         2.0 (November 2018)\n \
 		         1.5 (June 2018)\n \
 		         1.4 (January 2018)\n \
 		         1.3 (December 2017)\n \
 		         1.2 (February 2016)\n \
 		         1.1 (January 2016)\n \
-		         1.0 (July 2015)\n\n \
-		AUTHOR: Francois Mernier\n\n")
+		         1.0 (July 2015)\n\n\n \
+		AUTHOR: Francois Mernier\n\n\n")
 
 
-
+	plot_arg = "t"
 
 	inputfile=sys.argv[1]
 	number_of_models=sys.argv[2]
 	number_of_models = int(number_of_models)
 	alpha=sys.argv[3]
 	input_mod_1=sys.argv[4]
+	if number_of_models==1:
+		if len(sys.argv) > 5:
+			plot_arg=sys.argv[5]
 	if number_of_models>1:
 		input_mod_2=sys.argv[5]
+		if len(sys.argv) > 6:
+			plot_arg=sys.argv[6]
 	if number_of_models>2:
 		input_mod_3=sys.argv[6]
+		if len(sys.argv) > 7:
+			plot_arg=sys.argv[7]
 	if number_of_models>3:
 		input_mod_4=sys.argv[7]
+		if len(sys.argv) > 8:
+			plot_arg=sys.argv[8]
 	if number_of_models>4 or number_of_models<1:
-		sys.exit("Error: This program can fit only 1, 2, 3 or 4 models simultaneously... Sorry :(")
+		sys.exit("Error: Abunfit can fit only 1, 2, 3 or 4 models simultaneously.")
 
 
+
+
+	# Setting the plot mode ON or OFF (based on whether the plot_arg arggument exists and is --disable-plot
+	if plot_arg=="--disable-plot":
+		plotting_mode = False # Display numbers on the terminal only. Useful to fit in series (e.g. serial_fitter.sh)
+	else:
+		plotting_mode = True # Plot a figure with the best-fit models and save it into "fig_output.pdf"
 
 
 
@@ -292,10 +332,10 @@ def main():
 
 
 	# Read cluster measurements data.
-	f1 = file(inputfile)
+	f1 = open(inputfile, 'r')
 	cl_abun = numpy.loadtxt(f1)
 
-	elements = cl_abun[:,0]
+	elements = cl_abun[:,0].astype(int)
 	data = cl_abun[:,1]
 	errors = cl_abun[:,2]
 
@@ -313,32 +353,22 @@ def main():
 
 
 
-
-
 	# Read atomic masses. 
 	# mass[i] = atomic mass of the ith element.
-	f2 = file("atomic_masses.txt")
+	f2 = open("atomic_masses.txt", 'r')
 	atom_mass = numpy.loadtxt(f2)
-
-	mass = numpy.arange(len(elements))
-	mass = mass*0.0
-	for i in range(len(elements)):
-		mass[i] = atom_mass[int(elements[i])-1,1]
+	mass = atom_mass.T[1][elements-1]
 
 
 
 
 
 
-	# Read abundance tables (Lodders et al. 2009). 
-	# lodders[i] = protosolar abun. of the ith element (rel. to Si==10^6).
-	f3 = file(abun_table)
+	# Read abundance tables (solarref et al. 2009). 
+	# solarref[i] = protosolar abun. of the ith element (rel. to Si==10^6).
+	f3 = open(abun_table, 'r')
 	abun_file = numpy.loadtxt(f3)
-
-	lodders = numpy.arange(len(elements))
-	lodders = lodders*0.0
-	for i in range(len(elements)):
-		lodders[i] = abun_file[int(elements[i])-1,1]
+	solarref = abun_file.T[1][elements-1]
 
 
 
@@ -358,20 +388,9 @@ def main():
 
 
 	# Read list of available SNe models. 
-	f4 = file("list_models_SNIa.txt")
-	lines = f4.readlines()
-	list_models_SNIa = [remove_end_char(s) for s in lines]
-	f5 = file("list_models_SNcc.txt")
-	lines = f5.readlines()
-	list_models_SNcc = [remove_end_char(s) for s in lines]
-	f6 = file("list_models_AGB.txt")
-	lines = f6.readlines()
-	list_models_AGB = [remove_end_char(s) for s in lines]
-
-
-
-
-
+	list_models_SNIa = numpy.loadtxt("list_models_SNIa.txt", dtype="str").tolist()
+	list_models_SNcc = numpy.loadtxt("list_models_SNcc.txt", dtype="str").tolist()
+	list_models_AGB = numpy.loadtxt("list_models_AGB.txt", dtype="str").tolist()
 
 
 
@@ -384,7 +403,7 @@ def main():
 	elif (input_mod_1 in list_models_AGB):
 		model1 = integrate_AGB(input_mod_1,alpha_AGB,cl_elem_name)
 	else:
-		print "Error: The model", input_mod_1, "does not exist, or could not be found."
+		print("Error: The model", input_mod_1, "does not exist, or could not be found.")
 		sys.exit()
 
 
@@ -396,7 +415,7 @@ def main():
 		elif (input_mod_2 in list_models_AGB):
 			model2 = integrate_AGB(input_mod_2,alpha_AGB,cl_elem_name)
 		else:
-			print "Error: The model", input_mod_2, "does not exist, or could not be found."
+			print("Error: The model", input_mod_2, "does not exist, or could not be found.")
 			sys.exit()
 
 
@@ -408,7 +427,7 @@ def main():
 		elif (input_mod_3 in list_models_AGB):
 			model3 = integrate_AGB(input_mod_3,alpha_AGB,cl_elem_name)
 		else:
-			print "Error: The model", input_mod_3, "does not exist, or could not be found."
+			print("Error: The model", input_mod_3, "does not exist, or could not be found.")
 			sys.exit()
 
 
@@ -420,48 +439,43 @@ def main():
 		elif (input_mod_4 in list_models_AGB):
 			model4 = integrate_AGB(input_mod_4,alpha_AGB,cl_elem_name)
 		else:
-			print "Error: The model", input_mod_4, "does not exist, or could not be found."
+			print("Error: The model", input_mod_4, "does not exist, or could not be found.")
 			sys.exit()
 
+	
 
-
-	print "Model: ", input_mod_1
-	print model1
+	print("Model: ", input_mod_1)
+	print(model1)
 	if number_of_models>1:
-		print "Model: ", input_mod_2
-		print model2
+		print("Model: ", input_mod_2)
+		print(model2)
 	if number_of_models>2:
-		print "Model: ", input_mod_3
-		print model3
+		print("Model: ", input_mod_3)
+		print(model3)
 	if number_of_models>3:
-		print "Model: ", input_mod_4
-		print model4
-	#print "Mass: ", mass
-	#print "Lodders: ", lodders
+		print("Model: ", input_mod_4)
+		print(model4)
 
 
-	x=numpy.arange(len(elements))
-	x=x*0.0
+
+	x=numpy.zeros(len(elements))
 	if number_of_models>1:
-		y=numpy.arange(len(elements))
-		y=y*0.0
+		y=numpy.zeros(len(elements))
 	if number_of_models>2:
-		z=numpy.arange(len(elements))
-		z=z*0.0
+		z=numpy.zeros(len(elements))
 	if number_of_models>3:
-		w=numpy.arange(len(elements))
-		w=w*0.0
+		w=numpy.zeros(len(elements))
 
 
 	# Define X, Y (, Z, W): abun / supernova
 	for i in range(len(elements)):
-		x[i]=model1[i]/(mass[i]*lodders[i])
+		x[i]=model1[i]/(mass[i]*solarref[i])
 		if number_of_models>1:
-			y[i]=model2[i]/(mass[i]*lodders[i])
+			y[i]=model2[i]/(mass[i]*solarref[i])
 		if number_of_models>2:
-			z[i]=model3[i]/(mass[i]*lodders[i])
+			z[i]=model3[i]/(mass[i]*solarref[i])
 		if number_of_models>3:
-			w[i]=model4[i]/(mass[i]*lodders[i])
+			w[i]=model4[i]/(mass[i]*solarref[i])
 
 
 	
@@ -545,7 +559,7 @@ def main():
 	#Check for possible (unphysical) negative contribution...
 	for i in range(len(bestSNe)):
 		if bestSNe[i] < 0.0:
-			print "Error: One model has a negative contribution to the enrichment. This is physically not allowed."
+			print("Error: One model has a negative contribution to the enrichment. This is physically not allowed.")
 			chi = 9999999
 			chiout = open("currentchi.txt", 'w+')
 			chiout.write("%s" % int(chi*100000))
@@ -556,28 +570,26 @@ def main():
 
 	#Compute chi2...
 	chi = 0.0
-	print "Optimal parameters:", bestSNe
+	print("Optimal parameters:", bestSNe)
 	if number_of_models==2:
-		print "Ratio:", bestSNe[0] / (bestSNe[0]+bestSNe[1]), "+/-", errr
+		print("Ratio:", bestSNe[0] / (bestSNe[0]+bestSNe[1]), "+/-", errr)
 	for i in range(len(elements)):
 		if number_of_models==1:
-			chi = chi + (data[i] - bestSNe[0]*x[i])**2 / errors[i]**2
+			chi += (data[i] - bestSNe[0]*x[i])**2 / errors[i]**2
 		if number_of_models==2:
-			chi = chi + (data[i] - bestSNe[0]*x[i] - bestSNe[1]*y[i])**2 / errors[i]**2
+			chi += (data[i] - bestSNe[0]*x[i] - bestSNe[1]*y[i])**2 / errors[i]**2
 		if number_of_models==3:
-			chi = chi + (data[i] - bestSNe[0]*x[i] - bestSNe[1]*y[i] - bestSNe[2]*z[i])**2 / errors[i]**2
+			chi += (data[i] - bestSNe[0]*x[i] - bestSNe[1]*y[i] - bestSNe[2]*z[i])**2 / errors[i]**2
 		if number_of_models==4:
-			chi = chi + (data[i] - bestSNe[0]*x[i] - bestSNe[1]*y[i] - bestSNe[2]*z[i] - bestSNe[3]*w[i])**2 / errors[i]**2
+			chi += (data[i] - bestSNe[0]*x[i] - bestSNe[1]*y[i] - bestSNe[2]*z[i] - bestSNe[3]*w[i])**2 / errors[i]**2
 
-	print "chi^2 / d.o.f. = ", float(chi),'/',(len(elements)- number_of_models), "=", \
-	       chi / (len(elements) - number_of_models)
+	print("chi^2 / d.o.f. = ", float(chi),'/',(len(elements)- number_of_models), "=", \
+	       chi / (len(elements) - number_of_models))
 
-	chiout = open("currentchi.txt", 'w+')
-	chiout.write("%s" % int(chi*100000))		# Used for serial_fitter.sh. *100000-> to distinguish the decimals (will be corrected in sort_summary_models.py)
+	chiout = open("currentchi.txt", 'w+') 
+	chiout.write("%s" % int(chi*100000)) # Used for serial_fitter.sh. *100000-> to distinguish the decimals (will be corrected in sort_fitting_results.py)
 
-
-
-
+	chiout.close()
 
 
 
@@ -586,40 +598,40 @@ def main():
 ##############################################################################################
 
 
-	print "--------------------------QDP FILE--------------------------" 
-	print "skip single"
-	print "line on 2,3,4,5,6"
-	print "mark 0 on 1"
-	print "r y -0.1 3"
-	print "la x Atomic Number"
-	print "la y Abundance (proto-solar)"
-	print "READ Serr 1,2"
-	print "! Abundance measurements"
+	print("--------------------------QDP FILE--------------------------")
+	print("skip single")
+	print("line on 2,3,4,5,6")
+	print("mark 0 on 1")
+	print("r y -0.1 3")
+	print("la x Atomic Number")
+	print("la y Abundance (proto-solar)")
+	print("READ Serr 1,2")
+	print("! Abundance measurements")
 	for el in range(len(elements)):
-		print elements[el], 0, data[el], errors[el]
-	print "NO"
-	print "! Total of models"
+		print(elements[el], 0, data[el], errors[el])
+	print("NO")
+	print("! Total of models")
 	for el in range(len(elements)):
-		print elements[el], 0, bestfit[el], 0
-	print "NO"
-	print "! Model:", input_mod_1
+		print(elements[el], 0, bestfit[el], 0)
+	print("NO")
+	print("! Model:", input_mod_1)
 	for el in range(len(elements)):
-		print elements[el], 0, bestSNe[0]*x[el], 0
+		print(elements[el], 0, bestSNe[0]*x[el], 0)
 	if number_of_models>1:
-		print "NO"
-		print "! Model:", input_mod_2
+		print("NO")
+		print("! Model:", input_mod_2)
 		for el in range(len(elements)):
-			print elements[el], 0, bestSNe[1]*y[el], 0
+			print(elements[el], 0, bestSNe[1]*y[el], 0)
 	if number_of_models>2:
-		print "NO"
-		print "! Model:", input_mod_3
+		print("NO")
+		print("! Model:", input_mod_3)
 		for el in range(len(elements)):
-			print elements[el], 0, bestSNe[2]*z[el], 0
+			print(elements[el], 0, bestSNe[2]*z[el], 0)
 	if number_of_models>3:
-		print "NO"
-		print "! Model:", input_mod_4
+		print("NO")
+		print("! Model:", input_mod_4)
 		for el in range(len(elements)):
-			print elements[el], 0, bestSNe[3]*w[el], 0
+			print(elements[el], 0, bestSNe[3]*w[el], 0)
 
 
 
@@ -684,73 +696,73 @@ def main():
 
 
 	if plotting_mode == True:
-		fig = plt.figure()
+		fig = plt.figure(figsize=(8, 5))
 		fig.subplots_adjust(bottom=0.12, right=0.95, top=0.95)
 
 		xmax = len(elements)+1
 		ymax = rescale_ymax(number_of_models, bestfit, data, errors)
 
-
-		plt.axis([0, xmax, 0.0, ymax])
+		width_bars=0.60
+		plt.axis([0.5, xmax, 0.0, ymax])
 		#plt.xlabel('Atomic numer', fontsize=14)
 		plt.ylabel("X/Fe Abundance ratio (proto-solar)", fontsize=12)
 		plt.tick_params(labelsize=13)
 		xaxis = numpy.arange(len(elements)+1)
 		xaxis = numpy.delete(xaxis, 0)
 		xlabels=cl_elem_name
-		plt.xticks(xaxis, xlabels)
-		width_bars=0.60
+		plt.xticks(xaxis+width_bars/2., xlabels)
 
+		fraction_label = label_SNfrac(input_mod_1, input_mod_2, list_models_SNIa, list_models_SNcc, list_models_AGB)
 
 
 		# Plot histograms and data points (depending on the number of models)
 
 		if number_of_models==1:
 			color1 = set_colors_1(input_mod_1, default_color_SNIa, default_color_SNcc, default_color_AGB)
-			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, color=color1, zorder=1)
-			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, color='none', edgecolor='black', zorder=2)
+			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, align="edge", color=color1, zorder=1)
+			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, align="edge", color='none', edgecolor='black', zorder=2)
 			input_mod_1 = rename_model(input_mod_1, list_models_SNIa, list_models_SNcc, list_models_AGB)
 
 
 		if number_of_models==2:
 			color2 = set_colors_2(input_mod_1, input_mod_2, default_color_SNIa, default_color_SNcc, default_color_AGB)
-			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, color=color2[0], zorder=1)
-			p2 = plt.bar(tuple(xaxis), tuple(bestSNe[1]*y[:]), width_bars, color=color2[1], bottom=bestSNe[0]*x[:], zorder=1)
+			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, align="edge", color=color2[0], zorder=1)
+			p2 = plt.bar(tuple(xaxis), tuple(bestSNe[1]*y[:]), width_bars, align="edge", color=color2[1], bottom=bestSNe[0]*x[:], zorder=1)
 			input_mod_1 = rename_model(input_mod_1, list_models_SNIa, list_models_SNcc, list_models_AGB)
 			input_mod_2 = rename_model(input_mod_2, list_models_SNIa, list_models_SNcc, list_models_AGB)
-			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, color='none', edgecolor='black', zorder=2)
+			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, align="edge", color='none', edgecolor='black', zorder=2)
 
 		if number_of_models==3:
 			color3 = set_colors_3(input_mod_1, input_mod_2, input_mod_3, default_color_SNIa, default_color_SNcc, default_color_AGB)
-			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, color=color3[0], zorder=1)
-			p2 = plt.bar(tuple(xaxis), tuple(bestSNe[1]*y[:]), width_bars, color=color3[1], bottom=bestSNe[0]*x[:], zorder=1)
-			p3 = plt.bar(tuple(xaxis), tuple(bestSNe[2]*z[:]), width_bars, color=color3[2], bottom=bestSNe[0]*x[:]+bestSNe[1]*y[:], zorder=1)
+			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, align="edge", color=color3[0], zorder=1)
+			p2 = plt.bar(tuple(xaxis), tuple(bestSNe[1]*y[:]), width_bars, align="edge", color=color3[1], bottom=bestSNe[0]*x[:], zorder=1)
+			p3 = plt.bar(tuple(xaxis), tuple(bestSNe[2]*z[:]), width_bars, align="edge", color=color3[2], bottom=bestSNe[0]*x[:]+bestSNe[1]*y[:], zorder=1)
 			input_mod_1 = rename_model(input_mod_1, list_models_SNIa, list_models_SNcc, list_models_AGB)
 			input_mod_2 = rename_model(input_mod_2, list_models_SNIa, list_models_SNcc, list_models_AGB)
 			input_mod_3 = rename_model(input_mod_3, list_models_SNIa, list_models_SNcc, list_models_AGB)
-			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, color='none', edgecolor='black', zorder=2)
+			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, align="edge", color='none', edgecolor='black', zorder=2)
 
 		if number_of_models==4:
 			color4 = set_colors_4(input_mod_1, input_mod_2, input_mod_3, input_mod_4, default_color_SNIa, default_color_SNcc, default_color_AGB)
-			print bestSNe[3]*w[:]
-			print color4
-			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, color=color4[0], zorder=1)
-			p2 = plt.bar(tuple(xaxis), tuple(bestSNe[1]*y[:]), width_bars, color=color4[1], bottom=bestSNe[0]*x[:], zorder=1)
-			p3 = plt.bar(tuple(xaxis), tuple(bestSNe[2]*z[:]), width_bars, color=color4[2], bottom=bestSNe[0]*x[:]+bestSNe[1]*y[:], zorder=1)
-			p4 = plt.bar(tuple(xaxis), tuple(bestSNe[3]*w[:]), width_bars, color=color4[3], bottom=bestSNe[0]*x[:]+bestSNe[1]*y[:]+bestSNe[2]*z[:], zorder=1)
+			print(bestSNe[3]*w[:])
+			print(color4)
+			p1 = plt.bar(tuple(xaxis), tuple(bestSNe[0]*x[:]), width_bars, align="edge", color=color4[0], zorder=1)
+			p2 = plt.bar(tuple(xaxis), tuple(bestSNe[1]*y[:]), width_bars, align="edge", color=color4[1], bottom=bestSNe[0]*x[:], zorder=1)
+			p3 = plt.bar(tuple(xaxis), tuple(bestSNe[2]*z[:]), width_bars, align="edge", color=color4[2], bottom=bestSNe[0]*x[:]+bestSNe[1]*y[:], zorder=1)
+			p4 = plt.bar(tuple(xaxis), tuple(bestSNe[3]*w[:]), width_bars, align="edge", color=color4[3], bottom=bestSNe[0]*x[:]+bestSNe[1]*y[:]+bestSNe[2]*z[:], zorder=1)
 			input_mod_1 = rename_model(input_mod_1, list_models_SNIa, list_models_SNcc, list_models_AGB)
 			input_mod_2 = rename_model(input_mod_2, list_models_SNIa, list_models_SNcc, list_models_AGB)
 			input_mod_3 = rename_model(input_mod_3, list_models_SNIa, list_models_SNcc, list_models_AGB)
 			input_mod_4 = rename_model(input_mod_4, list_models_SNIa, list_models_SNcc, list_models_AGB)
-			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, color='none', edgecolor='black', zorder=2)
+			ptot = plt.bar(tuple(xaxis), tuple(bestfit[:]), width_bars, align="edge", color='none', edgecolor='black', zorder=2)
 
 
 
-		item1 = plt.errorbar(xaxis[:], data[:], xerr=0.0, yerr=errors[:], ls=' ', linewidth=1.0, color='black', markersize=6, fmt='s', zorder=3)
+		item1 = plt.errorbar(xaxis[:]+width_bars/2., data[:], xerr=0.0, yerr=errors[:], ls=' ', linewidth=1.0, color='black', markersize=6, fmt='s', zorder=3)
 		plt.axhline(y=1.0, xmin=0, xmax=30, color='black', linestyle='--', linewidth=1.0, alpha=0.4, zorder=0)
-		plt.annotate("$\chi^2$/d.o.f. = "+str(numpy.round_(float(chi),1))+"/"+str((len(elements)- number_of_models)), xy=(0.95*xmax, 0.9*ymax), horizontalalignment='right', color='black', fontsize=14)
+		plt.annotate(r'$\chi^2$/d.o.f. = '+str(numpy.round_(float(chi),1))+"/"+str((len(elements)- number_of_models)), xy=(0.95*xmax, 0.9*ymax), horizontalalignment='right', color='black', fontsize=14)
 
-
+		plt.annotate(fraction_label+str(round(bestSNe[0] / (bestSNe[0]+bestSNe[1]),4)), xy=(0.9*xmax, 0.8*ymax), horizontalalignment='right', color='black', fontsize=16)
 
 
 
@@ -765,7 +777,6 @@ def main():
 			plt.legend([item1, p1, p2, p3], ["Data", input_mod_1, input_mod_2, input_mod_3], ncol=1, numpoints=1, loc=(0.02,0.75), fontsize=10)
 		if number_of_models==4:
 			plt.legend([item1, p1, p2, p3, p4], ["Data", input_mod_1, input_mod_2, input_mod_3, input_mod_4], ncol=1, numpoints=1, loc=(0.02,0.70), fontsize=10)
-
 
 		plt.show()
 		fig.savefig('fig_output.pdf', format='pdf')
@@ -835,54 +846,55 @@ def integrate_SNcc( input_model, alpha , elem_name ):
 		(input_model == "No06_0.004") or (input_model == "No06_0.02") or \
 		(input_model == "No06_0_undecayed") or (input_model == "No06_0.001_undecayed") or \
 		(input_model == "No06_0.004_undecayed") or (input_model == "No06_0.02_undecayed"):
-		m=[13,15,18,20,25,30,40]
+		m=numpy.array([13,15,18,20,25,30,40])
 	elif (input_model == "Ch04_0") or (input_model == "Ch04_1E-6") or \
 		(input_model == "Ch04_1E-4") or (input_model == "Ch04_1E-3") or \
 		(input_model == "Ch04_6E-3") or (input_model == "Ch04_2E-2"):
-		m=[13,15,20,25,30,35]
+		m=numpy.array([13,15,20,25,30,35])
 	elif (input_model == "No13_SNcc_0"):
-		m=[11,13,15,18,20,25,30,40,100,140]
+		m=numpy.array([11,13,15,18,20,25,30,40,100,140])
 	elif (input_model == "No13_SNcc_0.001") or (input_model == "No13_SNcc_0.004") or \
 		(input_model == "No13_SNcc_0.008") or (input_model == "No13_SNcc_0.02") or \
 		(input_model == "No13_SNcc_0.05"):
-		m=[13,15,18,20,25,30,40]
+		m=numpy.array([13,15,18,20,25,30,40])
 	elif (input_model == "No13_PISNe_0"):
-		m=[140,150,170,200,270,300]
-		dm=[5,15,25,50,50,15]
+		m=numpy.array([140,150,170,200,270,300])
 	elif (input_model == "No13_SNe_0"):
-		m=[11,13,15,18,20,25,30,40,100,140,150,170,200,270,300]
+		m=numpy.array([11,13,15,18,20,25,30,40,100,140,150,170,200,270,300])
 	elif (input_model == "No13_HNe_0"):
-		m=[20,25,30,40,100,140]
+		m=numpy.array([20,25,30,40,100,140])
 	elif (input_model == "No13_HNe_0.001") or (input_model == "No13_HNe_0.004") or \
 		(input_model == "No13_HNe_0.008") or (input_model == "No13_HNe_0.02") or \
 		(input_model == "No13_HNe_0.05"):
-		m=[20,25,30,40]
+		m=numpy.array([20,25,30,40])
 	elif (input_model == "He0210_SNcc_0"):
-		m=[10,12,15,20,25,35,50,75,100]
+		m=numpy.array([10,12,15,20,25,35,50,75,100])
 	elif (input_model == "He0210_PISNe_0"):
-		m=[140,150,158,168,177,186,195,205,214,223,232,242,251,260]
+		m=numpy.array([140,150,158,168,177,186,195,205,214,223,232,242,251,260])
 	elif (input_model == "He0210_SNe_0"):
-		m=[10,12,15,20,25,35,50,75,100,140,150,158,168,177,186,195,205,214,223,232,242,251,260]
+		m=numpy.array([10,12,15,20,25,35,50,75,100,140,150,158,168,177,186,195,205,214,223,232,242,251,260])
 	elif (input_model == "Su16_N20"):
-		m=[12.25, 12.5, 12.75, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 
+		m=numpy.array([12.25, 12.5, 12.75, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 
 		14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.2, 15.7, 15.8, 
 		15.9, 16.0, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9, 17.0, 17.1, 
 		17.3, 17.4, 17.5, 17.6, 17.7, 17.9, 18.0, 18.1, 18.2, 18.3, 18.4, 18.5, 18.7, 
 		18.8, 18.9, 19.0, 19.1, 19.2, 19.3, 19.4, 19.7, 19.8, 20.1, 20.2, 20.3, 20.4, 
 		20.5, 20.6, 20.8, 21.0, 21.1, 21.2, 21.5, 21.6, 21.7, 25.2, 25.3, 25.4, 25.5, 
 		25.6, 25.7, 25.8, 25.9, 26.0, 26.1, 26.2, 26.3, 26.4, 26.5, 26.6, 26.7, 26.8, 
-		26.9, 27.0, 27.1, 27.2, 27.3, 27.4, 29.0, 29.1, 29.2, 29.6, 60, 80, 100, 120]
+		26.9, 27.0, 27.1, 27.2, 27.3, 27.4, 29.0, 29.1, 29.2, 29.6, 60, 80, 100, 120])
 	elif (input_model == "Su16_W18"):
-		m=[12.25, 12.5, 12.75, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 
+		m=numpy.array([12.25, 12.5, 12.75, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 
 		14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.2, 15.7, 15.8, 
 		16.0, 16.1, 16.2, 16.3, 16.4, 16.5, 16.6, 16.7, 16.8, 16.9, 17.0, 17.1, 17.3, 
 		17.4, 17.5, 17.6, 17.9, 18.1, 18.2, 18.3, 18.4, 18.5, 19.2, 19.3, 19.7, 19.8, 
 		20.1, 20.2, 20.3, 20.4, 20.5, 20.8, 21.0, 21.1, 21.2, 21.5, 21.6, 25.2, 25.4, 
 		25.5, 25.6, 25.7, 25.8, 25.9, 26.0, 26.1, 26.2, 26.3, 26.4, 26.5, 27.0, 27.1, 
-		27.2, 27.3, 60, 120]
+		27.2, 27.3, 60, 120])
+	elif (input_model == "Ro10_0") or (input_model == "Ro10_0.000002") or (input_model == "Ro10_0.0002") or \
+		(input_model == "Ro10_0.002") or (input_model == "Ro10_0.02"):
+		m=numpy.array([1.])
 
-	y=numpy.arange(len(elem_name))
-	y=y*0.0
+	y=numpy.zeros(len(elem_name))
 
 	alpha = float(alpha)
 	#alpha=-2.35 (Salpeter)
@@ -950,30 +962,41 @@ def integrate_SNcc( input_model, alpha , elem_name ):
 			data_mod=numpy.loadtxt('SNcc/Su16/N20/'+str(el)+'.txt') #Open file
 		elif (input_model == "Su16_W18"):
 			data_mod=numpy.loadtxt('SNcc/Su16/W18/'+str(el)+'.txt') #Open file
+		elif (input_model == "Ro10_0"):
+			data_mod=numpy.array([numpy.loadtxt('SNcc/Ro10/0/'+str(el)+'.txt')]) #Open file
+		elif (input_model == "Ro10_0.000002"):
+			data_mod=numpy.array([numpy.loadtxt('SNcc/Ro10/0.000002/'+str(el)+'.txt')]) #Open file
+		elif (input_model == "Ro10_0.0002"):
+			data_mod=numpy.array([numpy.loadtxt('SNcc/Ro10/0.0002/'+str(el)+'.txt')]) #Open file
+		elif (input_model == "Ro10_0.002"):
+			data_mod=numpy.array([numpy.loadtxt('SNcc/Ro10/0.002/'+str(el)+'.txt')]) #Open file
+		elif (input_model == "Ro10_0.02"):
+			data_mod=numpy.array([numpy.loadtxt('SNcc/Ro10/0.02/'+str(el)+'.txt')]) #Open file			
 		else:
-			print "Error: The model", input_model, "does not exist, or could not be found."
+			print("Error: The model", input_model, "does not exist, or could not be found.")
 			sys.exit()
 
-		yiel=numpy.arange(len(m))
-		yiel=0.0*yiel
+		yiel=numpy.zeros(len(m))
 		if len(data_mod.shape)==1:
-			yiel = data_mod
+			yiel=numpy.array(data_mod)
 		else:
-			for j in range(len(data_mod[:,0])):       #Merge the isotopes of a same element
-				yiel = yiel + data_mod[j,]
+			yiel=numpy.array(numpy.sum(data_mod.T, axis=1))   
 
 		sumt=0.
-  		sumn=0.
-	    
-		sumt=numpy.trapz(yiel*numpy.power(m,alpha), x=m)    #Integration "trapezoidal" (preferred)
-		sumn=numpy.trapz(numpy.power(m,alpha), x=m)
+		sumn=0.
 
-  		y[n]=sumt/sumn
-  		n=n+1
+		if ("Ro10" in input_model):
+			sumt=numpy.sum(yiel*m**alpha)
+			sumn=numpy.sum(m**alpha)
+		else:
+			sumt=numpy.trapz(yiel*numpy.power(m,alpha), x=m)    #Integration "trapezoidal" (preferred)
+			sumn=numpy.trapz(numpy.power(m,alpha), x=m)
+
+		y[n]=sumt/sumn
+		n=n+1
 
 
 	return y
-
 
 
 
@@ -987,9 +1010,11 @@ def integrate_SNcc( input_model, alpha , elem_name ):
 ## and assuming a certain IMF.
 def integrate_AGB( input_model, alpha , elem_name ):
 
-	m=[0.9,1.0,1.25,1.5,1.75,1.9,2.0,2.25,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5]
-	y=numpy.arange(len(elem_name))
-	y=y*0.0
+	if "K10_AGB" in input_model:
+		m=numpy.array([1])
+	else:
+		m=numpy.array([0.9,1.0,1.25,1.5,1.75,1.9,2.0,2.25,2.5,3.0,3.5,4.0,4.5,5.0,5.5,6.0,6.5])
+	y=numpy.zeros(len(elem_name))
 
 	alpha = float(alpha)
 	#alpha=-2.35 (Salpeter)
@@ -1009,26 +1034,36 @@ def integrate_AGB( input_model, alpha , elem_name ):
 			data_mod=numpy.loadtxt('AGB/No13_AGB/0.008/'+str(el)+'.txt') #Open file
 		elif (input_model == "No13_AGB_0.02"):
 			data_mod=numpy.loadtxt('AGB/No13_AGB/0.02/'+str(el)+'.txt') #Open file
+		elif (input_model == "K10_AGB_0.0001"):
+			 data_mod=numpy.array([numpy.loadtxt('AGB/K10_AGB/0.0001/'+str(el)+'.txt')]) #Open file  
+		elif (input_model == "K10_AGB_0.004"):
+			 data_mod=numpy.array([numpy.loadtxt('AGB/K10_AGB/0.004/'+str(el)+'.txt')]) #Open file  
+		elif (input_model == "K10_AGB_0.008"):
+			 data_mod=numpy.array([numpy.loadtxt('AGB/K10_AGB/0.008/'+str(el)+'.txt')]) #Open file
+		elif (input_model == "K10_AGB_0.02"):
+			 data_mod=numpy.array([numpy.loadtxt('AGB/K10_AGB/0.02/'+str(el)+'.txt')]) #Open file	
 		else:
-			print "Error: The model", input_model, "does not exist, or could not be found."
+			print("Error: The model", input_model, "does not exist, or could not be found.")
 			sys.exit()
 
-		yiel=numpy.arange(len(m))
-		yiel=0.0*yiel
+		yiel=numpy.zeros(len(m))
 		if len(data_mod.shape)==1:
-			yiel = data_mod
+			yiel=numpy.array(data_mod)
 		else:
-			for j in range(len(data_mod[:,0])):       #Merge the isotopes of a same element
-				yiel = yiel + data_mod[j,]
+			yiel=numpy.array(numpy.sum(data_mod.T, axis=1))   
 
 		sumt=0.
-  		sumn=0.
-	    
-		sumt=numpy.trapz(yiel*numpy.power(m,alpha), x=m)    #Integration "trapezoidal" (preferred)
-		sumn=numpy.trapz(numpy.power(m,alpha), x=m)
+		sumn=0.
+	   	
+		if ("K10_AGB" in input_model):
+			sumt=numpy.sum(yiel*m**alpha)
+			sumn=numpy.sum(m**alpha)
+		else:
+			sumt=numpy.trapz(yiel*numpy.power(m,alpha), x=m)    #Integration "trapezoidal" (preferred)
+			sumn=numpy.trapz(numpy.power(m,alpha), x=m)
 
-  		y[n]=sumt/sumn
-  		n=n+1
+		y[n]=sumt/sumn
+		n=n+1
 
 
 	return y
@@ -1067,7 +1102,7 @@ def sum_SNIa( SNIa_model , elements ):
 
 ## Calculates the purely SNcc contribution to a fit from a AGB+SNcc component
 ## (letting the Fe relative contributions of the SNcc to 1)
-def extract_SNcc_contrib_1model( input_AGBSNcc_model , alpha , elem_name , mass , lodders , elements , bestSNe , cl_abun ):
+def extract_SNcc_contrib_1model( input_AGBSNcc_model , alpha , elem_name , mass , solarref , elements , bestSNe , cl_abun ):
 
 	if (input_AGBSNcc_model == "No13_AGB+SNcc_0"):
 		input_SNcc_model = "No13_SNcc_0"
@@ -1080,7 +1115,7 @@ def extract_SNcc_contrib_1model( input_AGBSNcc_model , alpha , elem_name , mass 
 	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.02"):
 		input_SNcc_model = "No13_SNcc_0.02"
 	else:
-		print "Error: The model", input_AGBSNcc_model, "does not exist, or could not be found."
+		print("Error: The model", input_AGBSNcc_model, "does not exist, or could not be found.")
 		sys.exit()
 
 
@@ -1094,7 +1129,7 @@ def extract_SNcc_contrib_1model( input_AGBSNcc_model , alpha , elem_name , mass 
 
 	# Define X, Y (, Z, W): abun / supernova
 	for i in range(len(elements)):
-		x[i]=input_model1[i]/(mass[i]*lodders[i])
+		x[i]=input_model1[i]/(mass[i]*solarref[i])
 
 	Fe_index=-1
 	for i in range(len(cl_abun[:,0])):	# Calculate the array index for Fe
@@ -1126,7 +1161,7 @@ def extract_SNcc_contrib_1model( input_AGBSNcc_model , alpha , elem_name , mass 
 
 ## Calculates the purely SNcc contribution to a fit from a AGB+SNcc component
 ## (letting the Fe relative contributions of the 2 models unchanged)
-def extract_SNcc_contrib_2models( input_AGBSNcc_model, input_model2, alpha , elem_name , mass , lodders , elements , bestSNe , cl_abun ):
+def extract_SNcc_contrib_2models( input_AGBSNcc_model, input_model2, alpha , elem_name , mass , solarref , elements , bestSNe , cl_abun ):
 
 	if (input_AGBSNcc_model == "No13_AGB+SNcc_0"):
 		input_SNcc_model = "No13_SNcc_0"
@@ -1139,7 +1174,7 @@ def extract_SNcc_contrib_2models( input_AGBSNcc_model, input_model2, alpha , ele
 	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.02"):
 		input_SNcc_model = "No13_SNcc_0.02"
 	else:
-		print "Error: The model", input_AGBSNcc_model, "does not exist, or could not be found."
+		print("Error: The model", input_AGBSNcc_model, "does not exist, or could not be found.")
 		sys.exit()
 
 
@@ -1155,8 +1190,8 @@ def extract_SNcc_contrib_2models( input_AGBSNcc_model, input_model2, alpha , ele
 
 	# Define X, Y (, Z, W): abun / supernova
 	for i in range(len(elements)):
-		x[i]=input_model1[i]/(mass[i]*lodders[i])
-		y[i]=input_model2[i]/(mass[i]*lodders[i])
+		x[i]=input_model1[i]/(mass[i]*solarref[i])
+		y[i]=input_model2[i]/(mass[i]*solarref[i])
 
 	Fe_index=-1
 	for i in range(len(cl_abun[:,0])):	# Calculate the array index for Fe
@@ -1190,7 +1225,7 @@ def extract_SNcc_contrib_2models( input_AGBSNcc_model, input_model2, alpha , ele
 
 ## Calculates the purely SNcc contribution to a fit from a AGB+SNcc component
 ## (letting the Fe relative contributions of the 3 models unchanged)
-def extract_SNcc_contrib_3models( input_AGBSNcc_model, input_model2, input_model3 , alpha , elem_name , mass , lodders , elements , bestSNe , cl_abun ):
+def extract_SNcc_contrib_3models( input_AGBSNcc_model, input_model2, input_model3 , alpha , elem_name , mass , solarref , elements , bestSNe , cl_abun ):
 
 	if (input_AGBSNcc_model == "No13_AGB+SNcc_0"):
 		input_SNcc_model = "No13_SNcc_0"
@@ -1203,7 +1238,7 @@ def extract_SNcc_contrib_3models( input_AGBSNcc_model, input_model2, input_model
 	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.02"):
 		input_SNcc_model = "No13_SNcc_0.02"
 	else:
-		print "Error: The model", input_AGBSNcc_model, "does not exist, or could not be found."
+		print("Error: The model", input_AGBSNcc_model, "does not exist, or could not be found.")
 		sys.exit()
 
 
@@ -1221,9 +1256,9 @@ def extract_SNcc_contrib_3models( input_AGBSNcc_model, input_model2, input_model
 
 	# Define X, Y (, Z, W): abun / supernova
 	for i in range(len(elements)):
-		x[i]=input_model1[i]/(mass[i]*lodders[i])
-		y[i]=input_model2[i]/(mass[i]*lodders[i])
-		z[i]=input_model3[i]/(mass[i]*lodders[i])
+		x[i]=input_model1[i]/(mass[i]*solarref[i])
+		y[i]=input_model2[i]/(mass[i]*solarref[i])
+		z[i]=input_model3[i]/(mass[i]*solarref[i])
 
 	Fe_index=-1
 	for i in range(len(cl_abun[:,0])):	# Calculate the array index for Fe
@@ -1258,7 +1293,7 @@ def extract_SNcc_contrib_3models( input_AGBSNcc_model, input_model2, input_model
 
 ## Calculates the purely SNcc contribution to a fit from a AGB+SNcc component
 ## (letting the Fe relative contributions of the 4 models unchanged)
-def extract_SNcc_contrib_4models( input_AGBSNcc_model , input_model2 , input_model3 , input_model4 , alpha , elem_name , mass , lodders , elements , bestSNe , cl_abun ):
+def extract_SNcc_contrib_4models( input_AGBSNcc_model , input_model2 , input_model3 , input_model4 , alpha , elem_name , mass , solarref , elements , bestSNe , cl_abun ):
 
 	if (input_AGBSNcc_model == "No13_AGB+SNcc_0"):
 		input_SNcc_model = "No13_SNcc_0"
@@ -1271,7 +1306,7 @@ def extract_SNcc_contrib_4models( input_AGBSNcc_model , input_model2 , input_mod
 	elif (input_AGBSNcc_model == "No13_AGB+SNcc_0.02"):
 		input_SNcc_model = "No13_SNcc_0.02"
 	else:
-		print "Error: The model", input_AGBSNcc_model, "does not exist, or could not be found."
+		print("Error: The model", input_AGBSNcc_model, "does not exist, or could not be found.")
 		sys.exit()
 
 
@@ -1291,10 +1326,10 @@ def extract_SNcc_contrib_4models( input_AGBSNcc_model , input_model2 , input_mod
 
 	# Define X, Y (, Z, W): abun / supernova
 	for i in range(len(elements)):
-		x[i]=input_model1[i]/(mass[i]*lodders[i])
-		y[i]=input_model2[i]/(mass[i]*lodders[i])
-		z[i]=input_model3[i]/(mass[i]*lodders[i])
-		w[i]=input_model4[i]/(mass[i]*lodders[i])
+		x[i]=input_model1[i]/(mass[i]*solarref[i])
+		y[i]=input_model2[i]/(mass[i]*solarref[i])
+		z[i]=input_model3[i]/(mass[i]*solarref[i])
+		w[i]=input_model4[i]/(mass[i]*solarref[i])
 
 	Fe_index=-1
 	for i in range(len(cl_abun[:,0])):	# Calculate the array index for Fe
@@ -1331,6 +1366,7 @@ def extract_SNcc_contrib_4models( input_AGBSNcc_model , input_model2 , input_mod
 ## Function used to fit the data to the models. This defines a
 ## set of linear equations (by multiplying the matrices of parameters
 ## (SNe) and of the predicted yields (modmatrix)).
+
 def checkFe(cl_abun):
 	Fe_index=-1
 	for i in range(len(cl_abun[:,0])):	# Calculate the array index for Fe
@@ -1339,10 +1375,10 @@ def checkFe(cl_abun):
 	if Fe_index<1:
 		sys.exit("Error: Fe abundance not found in", inputfile, ".")
 	if cl_abun[Fe_index,1] !=1.0:
-		print "\n\nWarning: Fe abundance is not set to 1.0 in the imput file!"
-		print "         Since the sum of the Fe from SNe models always scales to the Fe abundance in the imput file,"
-		print "         The fit might be biased in case of Fe large uncertainties... "
-		print "         It is strongly recommended to scale all the abundances to the Fe value!!\n\n"
+		print("\n\nWarning: Fe abundance is not set to 1.0 in the imput file!")
+		print("         Since the sum of the Fe from SNe models always scales to the Fe abundance in the imput file,")
+		print("         The fit might be biased in case of Fe large uncertainties... ")
+		print("         It is strongly recommended to scale all the abundances to the Fe value!!\n\n")
 	return 
 
 
@@ -1376,7 +1412,7 @@ def fitfunc2(SNe,modmatrix, cl_abun):
 		sys.exit("Error: Fe abundance not found in", inputfile, ".")
 
 	SNe[1]=(cl_abun[Fe_index,1]-SNe[0]*modmatrix[0,Fe_index])/modmatrix[1,Fe_index]
-	return ((cl_abun[:,1] - numpy.dot(SNe,modmatrix))/cl_abun[:,2])**2
+	return ((cl_abun[:,1] - numpy.dot(SNe,modmatrix))/cl_abun[:,2])
 
 
 
@@ -1393,7 +1429,7 @@ def fitfunc3(SNe,modmatrix, cl_abun):
 		sys.exit("Error: Fe abundance not found in", inputfile, ".")
 
 	SNe[2]=(cl_abun[Fe_index,1]-SNe[0]*modmatrix[0,Fe_index]-SNe[1]*modmatrix[1,Fe_index])/modmatrix[2,Fe_index]
-	return ((cl_abun[:,1] - numpy.dot(SNe,modmatrix))/cl_abun[:,2])**2
+	return ((cl_abun[:,1] - numpy.dot(SNe,modmatrix))/cl_abun[:,2])
 
 
 
@@ -1412,7 +1448,7 @@ def fitfunc4(SNe,modmatrix, cl_abun):
 		sys.exit("Error: Fe abundance not found in", inputfile, ".")
 
 	SNe[3]=(cl_abun[Fe_index,1]-SNe[0]*modmatrix[0,Fe_index]-SNe[1]*modmatrix[1,Fe_index]-SNe[2]*modmatrix[2,Fe_index])/modmatrix[3,Fe_index]
-	return ((cl_abun[:,1] - numpy.dot(SNe,modmatrix))/cl_abun[:,2])**2
+	return ((cl_abun[:,1] - numpy.dot(SNe,modmatrix))/cl_abun[:,2])
 
 
 
@@ -1655,18 +1691,25 @@ def rename_model(input_mod, list_models_SNIa, list_models_SNcc, list_models_AGB)
 	else:
 		input_mod = input_mod+" (AGB)"
 	return input_mod
+	
+	
+## Labels the SN fraction accordingly (for the legend of the plot)
+def label_SNfrac(input_mod1, input_mod2, list_models_SNIa, list_models_SNcc, list_models_AGB):
+	if (input_mod1 in list_models_SNIa) and (input_mod2 in list_models_SNcc):
+		fraction_label = "$\\frac{\mathrm{SNIa}}{\mathrm{SNIa+SNcc}} = $"
+	elif (input_mod1 in list_models_SNcc) and (input_mod2 in list_models_SNIa):
+		fraction_label = "$\\frac{\mathrm{SNcc}}{\mathrm{SNIa+SNcc}} = $"
+	else:
+		fraction_label = "$\\frac{\mathrm{model1}}{\mathrm{all\_models}} = $"
+	return fraction_label
+	
+
 
 ## Selects a color for models and avoid conflicts in case of several models from the same type  (for the legend of the plot)
 def set_colors_1(input_mod_1, default_color_SNIa, default_color_SNcc, default_color_AGB):
-	f4 = file("list_models_SNIa.txt")
-	lines = f4.readlines()
-	list_models_SNIa = [remove_end_char(s) for s in lines]
-	f5 = file("list_models_SNcc.txt")
-	lines = f5.readlines()
-	list_models_SNcc = [remove_end_char(s) for s in lines]
-	f6 = file("list_models_AGB.txt")
-	lines = f6.readlines()
-	list_models_AGB = [remove_end_char(s) for s in lines]
+	list_models_SNIa = numpy.loadtxt("list_models_SNIa.txt", dtype="str").tolist()
+	list_models_SNcc = numpy.loadtxt("list_models_SNcc.txt", dtype="str").tolist()
+	list_models_AGB = numpy.loadtxt("list_models_AGB.txt", dtype="str").tolist()
 
 	if (input_mod_1 in list_models_SNIa):
 		color1 = default_color_SNIa
@@ -1679,15 +1722,9 @@ def set_colors_1(input_mod_1, default_color_SNIa, default_color_SNcc, default_co
 
 ## Selects a color for models and avoid conflicts in case of several models from the same type  (for the legend of the plot)
 def set_colors_2(input_mod_1, input_mod_2, default_color_SNIa, default_color_SNcc, default_color_AGB):
-	f4 = file("list_models_SNIa.txt")
-	lines = f4.readlines()
-	list_models_SNIa = [remove_end_char(s) for s in lines]
-	f5 = file("list_models_SNcc.txt")
-	lines = f5.readlines()
-	list_models_SNcc = [remove_end_char(s) for s in lines]
-	f6 = file("list_models_AGB.txt")
-	lines = f6.readlines()
-	list_models_AGB = [remove_end_char(s) for s in lines]
+	list_models_SNIa = numpy.loadtxt("list_models_SNIa.txt", dtype="str").tolist()
+	list_models_SNcc = numpy.loadtxt("list_models_SNcc.txt", dtype="str").tolist()
+	list_models_AGB = numpy.loadtxt("list_models_AGB.txt", dtype="str").tolist()
 
 	color2 = ["aaa", "bbb"]
 	color2[0] = set_colors_1(input_mod_1, default_color_SNIa, default_color_SNcc, default_color_AGB)
@@ -1712,15 +1749,9 @@ def set_colors_2(input_mod_1, input_mod_2, default_color_SNIa, default_color_SNc
 
 ## Selects a color for models and avoid conflicts in case of several models from the same type  (for the legend of the plot)
 def set_colors_3(input_mod_1, input_mod_2, input_mod_3, default_color_SNIa, default_color_SNcc, default_color_AGB):
-	f4 = file("list_models_SNIa.txt")
-	lines = f4.readlines()
-	list_models_SNIa = [remove_end_char(s) for s in lines]
-	f5 = file("list_models_SNcc.txt")
-	lines = f5.readlines()
-	list_models_SNcc = [remove_end_char(s) for s in lines]
-	f6 = file("list_models_AGB.txt")
-	lines = f6.readlines()
-	list_models_AGB = [remove_end_char(s) for s in lines]
+	list_models_SNIa = numpy.loadtxt("list_models_SNIa.txt", dtype="str").tolist()
+	list_models_SNcc = numpy.loadtxt("list_models_SNcc.txt", dtype="str").tolist()
+	list_models_AGB = numpy.loadtxt("list_models_AGB.txt", dtype="str").tolist()
 
 	color3 = ["aaa", "bbb", "ccc"]
 	color3[0:2] = set_colors_2(input_mod_1, input_mod_2, default_color_SNIa, default_color_SNcc, default_color_AGB)
@@ -1731,6 +1762,7 @@ def set_colors_3(input_mod_1, input_mod_2, input_mod_3, default_color_SNIa, defa
 		else:
 			color3[2] = default_color_SNIa
 	elif (input_mod_3 in list_models_SNcc):
+
 		if (input_mod_1 in list_models_SNcc) or (input_mod_2 in list_models_SNcc):
 			color3[2] = "mediumpurple"
 		else:
@@ -1745,15 +1777,9 @@ def set_colors_3(input_mod_1, input_mod_2, input_mod_3, default_color_SNIa, defa
 
 ## Selects a color for models and avoid conflicts in case of several models from the same type  (for the legend of the plot)
 def set_colors_4(input_mod_1, input_mod_2, input_mod_3, input_mod_4):
-	f4 = file("list_models_SNIa.txt")
-	lines = f4.readlines()
-	list_models_SNIa = [remove_end_char(s) for s in lines]
-	f5 = file("list_models_SNcc.txt")
-	lines = f5.readlines()
-	list_models_SNcc = [remove_end_char(s) for s in lines]
-	f6 = file("list_models_AGB.txt")
-	lines = f6.readlines()
-	list_models_AGB = [remove_end_char(s) for s in lines]
+	list_models_SNIa = numpy.loadtxt("list_models_SNIa.txt", dtype="str").tolist()
+	list_models_SNcc = numpy.loadtxt("list_models_SNcc.txt", dtype="str").tolist()
+	list_models_AGB = numpy.loadtxt("list_models_AGB.txt", dtype="str").tolist()
 
 	color4 = ["aaa", "bbb", "ccc", "ddd"]
 	color4[0:3] = set_colors_3(input_mod_1, input_mod_2, input_mod_3, default_color_SNIa, default_color_SNcc, default_color_AGB)

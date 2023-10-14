@@ -1,14 +1,14 @@
 
 	/! If you use abunfit.py for a publication, please cite: 
-				- Mernier, F., de Plaa, J., Pinto, et al. 2016b, A&A, 595, A126
+				-Mernier, F., de Plaa, J., Pinto, et al. 2016b, A&A, 595, A126
 
 	/! If you use the abundance measurements reported in abunfit/data/ for a publication, please cite the 
 	   following papers accordingly: 
 				- de Plaa, J., Werner, N., Bleeker, J. A. M. et al., 2007, A&A, 465, 345
 				- Mernier, F., de Plaa, J., Pinto, C. et al., 2016a, A&A, 592, A157 
 				- Hitomi Collaboration, 2017, Nature, 551, 478
+				- Simionescu, A., Nakashima, S., Yamaguchi, Y. et al., 2018, MNRAS, submitted
 				- Mernier, F., Werner, N., de Plaa, J. et al., 2018b, MNRAS, 480, L95
-				- Simionescu, A., Nakashima, S., Yamaguchi, Y. et al., 2019, MNRAS, 483, 1701
 
 	/! If you use the supernova yields reported in abunfit/ for a publication, please cite the original 
 	   papers accordingly.
@@ -21,237 +21,285 @@
 _______________________________________________________________________________________________________________
 |
 |
-|		PROGRAM: abunfit.py 
-|		SYNOPSIS: ./abunfit.py [input_file] [number_of_models] [alpha] [SNe_model_1] [SNe_model_2] ...  
-|		DESCRIPTION: Fits a set of intra-cluster abundances with a combination of  
-|		supernovae (SNe) yields models. Several models (either SNcc or SNIa) are available  
-|		and can be updated or created. 
-|		ARGUMENTS:  
-|		        [input_file] -- (Location of the) Text input file of the set of measured   
-|		                        ICM abundances. This file must contain 3 columns:   
-|		                        (1) the element number (Z),  
-|		                        (2) the measured abundance, and  
-|		                        (3) its associated (symmetrical) uncertainties. 
-|		        [number_of_models] -- Integer indicating the number of  models to 
-|					      be fitted simultaneously (min: 1, max: 4). 
-|		        [alpha] -- Slope index of the assumed initial mass function (IMF).  
-|		                   Ex: for Salpeter IMF, alpha = -2.35. 
-|		        [model<1/2/...>] -- Name of the model. Currently available models:  
-|		                            ============== 
-|		                            ==== SNIa ==== 
-|		                            ============== 
-|		                            == Iwamoto et al. (1999) 
-|		                             - Iw99_W7 
-|		                             - Iw99_W70 
-|		                             - Iw99_WDD1 
-|		                             - Iw99_WDD2 
-|		                             - Iw99_WDD3 
-|		                             - Iw99_CDD1 
-|		                             - Iw99_CDD2 
-|		                            == Badenes et al. (2006) 
-|		                               (Based on Tycho's best spectral fits...) 
-|		                             - Ba06_DDTa 
-|		                             - Ba06_DDTb 
-|		                             - Ba06_DDTc 
-|		                             - Ba06_DDTd 
-|		                             - Ba06_DDTe 
-|		                             - Ba06_DDTf 
-|		                            == Maeda et al. (2010) 
-|		                               (2-D explosion models...) 
-|		                             - Ma10_C-DEF 
-|		                             - Ma10_C-DDT 
-|		                             - Ma10_O-DDT 
-|		                            == Seitenzahl et al. (2013) 
-|		                               (3-D delayed-detonation explosion models...) 
-|		                             - Se13_N1 
-|		                             - Se13_N3 
-|		                             - Se13_N5 
-|		                             - Se13_N10 
-|		                             - Se13_N20 
-|		                             - Se13_N40 
-|		                             - Se13_N100H 
-|		                             - Se13_N100 
-|		                             - Se13_N100L 
-|		                             - Se13_N150 
-|		                             - Se13_N200 
-|		                             - Se13_N300C 
-|		                             - Se13_N1600 
-|		                             - Se13_N1600C 
-|		                             - Se13_N100_Z0.5 
-|		                             - Se13_N100_Z0.1 
-|		                             - Se13_N100_Z0.01 
-|		                            == Fink et al. (2014) 
-|		                               (3-D deflagration explosion models...) 
-|		                             - Fi14_N1def 
-|		                             - Fi14_N3def 
-|		                             - Fi14_N5def 
-|		                             - Fi14_N10def 
-|		                             - Fi14_N20def 
-|		                             - Fi14_N40def 
-|		                             - Fi14_N100Hdef 
-|		                             - Fi14_N100def 
-|		                             - Fi14_N100Ldef 
-|		                             - Fi14_N150def 
-|		                             - Fi14_N200def 
-|		                             - Fi14_N300Cdef 
-|		                             - Fi14_N1600def 
-|		                             - Fi14_N1600Cdef 
-|		                            == Ohlmann et al. (2014) 
-|		                               (3-D delayed-detonation expl. models, varying C fraction...) 
-|		                             - Oh14_DDT8_N100_c50 
-|		                             - Oh14_DDT8_N100_rpc20 
-|		                             - Oh14_DDT8_N100_rpc32 
-|		                             - Oh14_DDT8_N100_rpc40 
-|		                            == Leung & Nomoto (2018) 
-|		                               (2-D explosion models with varying initial metallicities...) 
-|		                             - Le18_050-1-c3-1P 
-|		                             - Le18_100-1-c3-1P 
-|		                             - Le18_100-0-c3 
-|		                             - Le18_100-0.1-c3 
-|		                             - Le18_100-0.5-c3 
-|		                             - Le18_100-1-c3 
-|		                             - Le18_100-2-c3 
-|		                             - Le18_100-3-c3 
-|		                             - Le18_100-5-c3 
-|		                             - Le18_300-1-c3-1P 
-|		                             - Le18_300-0-c3 
-|		                             - Le18_300-0.1-c3 
-|		                             - Le18_300-0.5-c3 
-|		                             - Le18_300-1-c3 
-|		                             - Le18_300-2-c3 
-|		                             - Le18_300-3-c3 
-|		                             - Le18_300-5-c3 
-|		                             - Le18_500-1-c3-1P 
-|		                             - Le18_500-0-c3 
-|		                             - Le18_500-0.1-c3 
-|		                             - Le18_500-0.5-c3 
-|		                             - Le18_500-1-c3 
-|		                             - Le18_500-2-c3 
-|		                             - Le18_500-3-c3 
-|		                             - Le18_500-5-c3 
-|		                            ==== Double-detonation (He shell) ==== 
-|		                            == Sim et al. (2012) 
-|		                             - Si12_CSDD-L 
-|		                             - Si12_CSDD-S 
-|		                             - Si12_ELDD-L 
-|		                             - Si12_ELDD-S 
-|		                             - Si12_HeD-L 
-|		                             - Si12_HeD-S 
-|		                            ==== Gravitationally confined detonation ==== 
-|		                            == Seitenzahl et al. (2016) 
-|		                             - Se16_GCD200 
-|		                            ==== Oxygen-neon WD ==== 
-|		                            == Marquardt et al. (2015) 
-|		                             - Ma15_CO15e7 
-|		                             - Ma15_ONe10e7 
-|		                             - Ma15_ONe13e7 
-|		                             - Ma15_ONe15e7 
-|		                             - Ma15_ONe17e7 
-|		                             - Ma15_ONe20e7 
-|		                            ==== Hybrid WD (CO and ONe layers) ==== 
-|		                            == Kromer et al. (2015) 
-|		                             - Kromer_N5_hybrid 
-|		                            ==== Ca-rich gap transient SNe ==== 
-|		                            == Waldman et al. (2011) 
-|		                             - Wa11_CO.45HE.2 
-|		                             - Wa11_CO.55HE.2 
-|		                             - Wa11_CO.5HE.15 
-|		                             - Wa11_CO.5HE.2 
-|		                             - Wa11_CO.5HE.2C.3 
-|		                             - Wa11_CO.5HE.2N.02 
-|		                             - Wa11_CO.5HE.3 
-|		                             - Wa11_CO.6HE.2 
-|		                            == Sim et al. (2010) 
-|		                               (Detonation, single deg. channel...) 
-|		                             - Si10_det_0.81 
-|		                             - Si10_det_0.88 
-|		                             - Si10_det_0.97 
-|		                             - Si10_det_1.06 
-|		                             - Si10_det_1.06_0.075Ne 
-|		                             - Si10_det_1.15 
-|		                            ==== Sub-Chandrasekhar DD merger ==== 
-|		                            == Pakmor et al. (2010) 
-|		                               (Violent merger of 0.9+0.9 M_sun...) 
-|		                             - Pa10_09_09 
-|		                            == Pakmor et al. (2012) 
-|		                               (Violent merger of 1.1+0.9 M_sun...) 
-|		                             - Pa12_11_09 
-|		                            == Kromer et al. (2013) 
-|		                               (Violent merger of 0.9+0.76 M_sun...) 
-|		                             - Kr13_09_076 
-|		                            == Kromer et al. (2013) 
-|		                               (Same, with lower initial metallicity...) 
-|		                             - Kr13_09_076_Z0.01 
-|		                            == Shen et al. (2018) 
-|		                               (Dynamically-driven double-degenerate double-detonation) 
-|		                             - Sh18_M[08/085/09/10/11]_[3070/5050]_Z[0/0005/001/002]_[01/1] 
-|		                            ============== 
-|		                            ==== SNcc ==== 
-|		                            ============== 
-|		                            == Chieffi & Limongi (2004) 
-|		                               (One initial metallicity per model...) 
-|		                             - Ch04_0 
-|		                             - Ch04_1E-6 
-|		                             - Ch04_1E-4 
-|		                             - Ch04_1E-3 
-|		                             - Ch04_6E-3 
-|		                             - Ch04_2E-2 
-|		                            == Nomoto et al. (2006) 
-|		                               (One initial metallicity per model...) 
-|		                             - No06_0 
-|		                             - No06_0.001 
-|		                             - No06_0.004 
-|		                             - No06_0.02 
-|		                            == Nomoto et al. (2013) 
-|		                               (One initial metallicity per model...) 
-|		                             = SNcc: 11 - 40 (140) M_sun 
-|		                              - No13_SNcc_0 
-|		                              - No13_SNcc_0.001 
-|		                              - No13_SNcc_0.004 
-|		                              - No13_SNcc_0.008 
-|		                              - No13_SNcc_0.02 
-|		                              - No13_SNcc_0.05 
-|		                             = PISNe: 140 - 300 M_sun 
-|		                              - No13_PISNe_0 
-|		                             = All SNe (SNcc+PISNe): 11 - 300 M_sun 
-|		                              - No13_SNe_0 
-|		                             = HNe: 20 - 40 (140) M_sun 
-|		                              - No13_HNe_0 
-|		                              - No13_HNe_0.001 
-|		                              - No13_HNe_0.004 
-|		                              - No13_HNe_0.008 
-|		                              - No13_HNe_0.02 
-|		                              - No13_HNe_0.05 
-|		                            == Heger & Woosley (2002,2010) 
-|		                               (Initial metallicity always 0!) 
-|		                             = SNcc: 10 - 100 M_sun 
-|		                              - He0210_SNcc_0 
-|		                             = PISNe: 140 - 260 M_sun 
-|		                              - He0210_PISNe_0 
-|		                             = All SNe (SNcc+PISNe): 10 - 260 M_sun 
-|		                              - He0210_SNe_0 
-|		                            == Sukhbold et al. (2016) 
-|		                              - Su16_N20 
-|		                              - Su16_W18 
-|		                            =================== 
-|		                            ==== AGB stars ==== 
-|		                            =================== 
-|		                            == Nomoto et al. (2013) 
-|		                               (One initial metallicity per model...) 
-|		                             = AGB: 0.9 - 6.5 M_sun (adapted from Karakas 2010) 
-|		                              - No13_AGB_0.001 
-|		                              - No13_AGB_0.004 
-|		                              - No13_AGB_0.008 
-|		                              - No13_AGB_0.02 
-|		EXAMPLE: ./abunfit.py data/CHEERS_Mernier18b.out 2 -2.35 Iw99_WDD2 No06_0.02 
-|		VERSION: 2.0 (November 2018) 
-|		         1.5 (June 2018) 
-|		         1.4 (January 2018) 
-|		         1.3 (December 2017) 
-|		         1.2 (February 2016) 
-|		         1.1 (January 2016) 
-|		         1.0 (July 2015) 
-|		AUTHOR: Francois Mernier
+| 		PROGRAM: abunfit.py
+|
+|
+| 		SYNOPSIS: ./abunfit.py [input_file] [number_of_models] [alpha] [SNe_model_1] [SNe_model_2] ... (--disable-plot) 
+|
+|
+| 		DESCRIPTION: Fits a set of intra-cluster abundances with a combination of 
+| 		supernovae (SNe) yields models. Several models (either SNcc or SNIa) are available 
+| 		and can be updated or created.
+|
+|
+| 		ARGUMENTS: 
+|
+| 		        [input_file] -- (Location of the) Text input file of the set of measured  
+| 		                        ICM abundances. This file must contain 3 columns:  
+| 		                        (1) the element number (Z), 
+| 		                        (2) the measured abundance, and 
+| 		                        (3) its associated (symmetrical) uncertainties.
+|
+| 		        [number_of_models] -- Integer indicating the number of models to
+|  			                       be fitted simultaneously (min: 1, max: 4).
+|
+| 		        [alpha] -- Slope index of the assumed initial mass function (IMF). 
+| 		                   Ex: for Salpeter IMF, alpha = -2.35.
+|
+| 		        [model<1/2/...>] -- Name of the model. Currently available models: 
+| 		                            ==============
+| 		                            ==== SNIa ====
+| 		                            ==============
+| 		                            == Iwamoto et al. (1999)
+| 		                             - Iw99_W7
+| 		                             - Iw99_W70
+| 		                             - Iw99_WDD1
+| 		                             - Iw99_WDD2
+| 		                             - Iw99_WDD3
+| 		                             - Iw99_CDD1
+| 		                             - Iw99_CDD2
+| 		                            == Badenes et al. (2006)
+| 		                               (Based on Tycho's best spectral fits...)
+| 		                             - Ba06_DDTa
+| 		                             - Ba06_DDTb
+| 		                             - Ba06_DDTc
+| 		                             - Ba06_DDTd
+| 		                             - Ba06_DDTe
+| 		                             - Ba06_DDTf
+| 		                            == Maeda et al. (2010)
+| 		                               (2-D explosion models...)
+| 		                             - Ma10_C-DEF
+| 		                             - Ma10_C-DDT
+| 		                             - Ma10_O-DDT
+| 		                            == Seitenzahl et al. (2013)
+| 		                               (3-D delayed-detonation explosion models...)
+| 		                             - Se13_N1
+| 		                             - Se13_N3
+| 		                             - Se13_N5
+| 		                             - Se13_N10
+| 		                             - Se13_N20
+| 		                             - Se13_N40
+| 		                             - Se13_N100H
+| 		                             - Se13_N100
+| 		                             - Se13_N100L
+| 		                             - Se13_N150
+| 		                             - Se13_N200
+| 		                             - Se13_N300C
+| 		                             - Se13_N1600
+| 		                             - Se13_N1600C
+| 		                             - Se13_N100_Z0.5
+| 		                             - Se13_N100_Z0.1
+| 		                             - Se13_N100_Z0.01
+| 		                            == Thielmann et al. (2010) 
+| 		                            - Thielmann_03 
+| 		                            == Fink et al. (2014)
+| 		                               (3-D deflagration explosion models...)
+| 		                             - Fi14_N1def
+| 		                             - Fi14_N3def
+| 		                             - Fi14_N5def
+| 		                             - Fi14_N10def
+| 		                             - Fi14_N20def
+| 		                             - Fi14_N40def
+| 		                             - Fi14_N100Hdef
+| 		                             - Fi14_N100def
+| 		                             - Fi14_N100Ldef
+| 		                             - Fi14_N150def
+| 		                             - Fi14_N200def
+| 		                             - Fi14_N300Cdef
+| 		                             - Fi14_N1600def
+| 		                             - Fi14_N1600Cdef
+| 		                            == Ohlmann et al. (2014)
+| 		                               (3-D delayed-detonation expl. models, varying C fraction...)
+| 		                             - Oh14_DDT8_N100_c50
+| 		                             - Oh14_DDT8_N100_rpc20
+| 		                             - Oh14_DDT8_N100_rpc32
+| 		                             - Oh14_DDT8_N100_rpc40
+| 		                            == Leung & Nomoto (2018)
+| 		                               (2-D explosion models with varying initial metallicities...)
+| 		                             - Le18_050-1-c3-1P
+| 		                             - Le18_100-1-c3-1P
+| 		                             - Le18_100-0-c3
+| 		                             - Le18_100-0.1-c3
+| 		                             - Le18_100-0.5-c3
+| 		                             - Le18_100-1-c3
+| 		                             - Le18_100-2-c3
+| 		                             - Le18_100-3-c3
+| 		                             - Le18_100-5-c3
+| 		                             - Le18_300-1-c3-1P
+| 		                             - Le18_300-0-c3
+| 		                             - Le18_300-0.1-c3
+| 		                             - Le18_300-0.5-c3
+| 		                             - Le18_300-1-c3
+| 		                             - Le18_300-2-c3
+| 		                             - Le18_300-3-c3
+| 		                             - Le18_300-5-c3
+| 		                             - Le18_500-1-c3-1P
+| 		                             - Le18_500-0-c3
+| 		                             - Le18_500-0.1-c3
+| 		                             - Le18_500-0.5-c3
+| 		                             - Le18_500-1-c3
+| 		                             - Le18_500-2-c3
+| 		                             - Le18_500-3-c3
+| 		                             - Le18_500-5-c3
+| 		                            ==== Double-detonation (He shell) ====
+| 		                            == Sim et al. (2012)
+| 		                             - Si12_CSDD-L
+| 		                             - Si12_CSDD-S
+| 		                             - Si12_ELDD-L
+| 		                             - Si12_ELDD-S
+| 		                             - Si12_HeD-L
+| 		                             - Si12_HeD-S
+| 		                            ==== Gravitationally confined detonation ====
+| 		                            == Seitenzahl et al. (2016)
+| 		                             - Se16_GCD200
+| 		                            ==== Oxygen-neon WD ====
+| 		                            == Marquardt et al. (2015)
+| 		                             - Ma15_CO15e7
+| 		                             - Ma15_ONe10e7
+| 		                             - Ma15_ONe13e7
+| 		                             - Ma15_ONe15e7
+| 		                             - Ma15_ONe17e7
+| 		                             - Ma15_ONe20e7
+| 		                            ==== Hybrid WD (CO and ONe layers) ====
+| 		                            == Kromer et al. (2015)
+| 		                             - Kromer_N5_hybrid
+| 		                            ==== Ca-rich gap transient SNe ====
+| 		                            == Waldman et al. (2011)
+| 		                             - Wa11_CO.45HE.2
+| 		                             - Wa11_CO.55HE.2
+| 		                             - Wa11_CO.5HE.15
+| 		                             - Wa11_CO.5HE.2
+| 		                             - Wa11_CO.5HE.2C.3
+| 		                             - Wa11_CO.5HE.2N.02
+| 		                             - Wa11_CO.5HE.3
+| 		                             - Wa11_CO.6HE.2
+| 		                            == Sim et al. (2010)
+| 		                               (Detonation, single deg. channel...)
+| 		                             - Si10_det_0.81
+| 		                             - Si10_det_0.88
+| 		                             - Si10_det_0.97
+| 		                             - Si10_det_1.06
+| 		                             - Si10_det_1.06_0.075Ne
+| 		                             - Si10_det_1.15
+| 		                            ==== Sub-Chandrasekhar DD merger ====
+| 		                            == Pakmor et al. (2010)
+| 		                               (Violent merger of 0.9+0.9 M_sun...)
+| 		                             - Pa10_09_09
+| 		                            == Pakmor et al. (2012)
+| 		                               (Violent merger of 1.1+0.9 M_sun...)
+| 		                             - Pa12_11_09
+| 		                            == Kromer et al. (2013)
+| 		                               (Violent merger of 0.9+0.76 M_sun...)
+| 		                             - Kr13_09_076
+| 		                            == Kromer et al. (2013)
+| 		                               (Same, with lower initial metallicity...)
+| 		                             - Kr13_09_076_Z0.01
+| 		                            == Shen et al. (2018)
+| 		                               (Dynamically-driven double-degenerate double-detonation)
+| 		                             - Sh18_M[08/085/09/10/11]_[3070/5050]_Z[0/0005/001/002]_[01/1]
+| 		                            ==============
+| 		                            ==== SNcc ====
+| 		                            ==============
+| 		                            == Chieffi & Limongi (2004)
+| 		                               (One initial metallicity per model...)
+| 		                             - Ch04_0
+| 		                             - Ch04_1E-6
+| 		                             - Ch04_1E-4
+| 		                             - Ch04_1E-3
+| 		                             - Ch04_6E-3
+| 		                             - Ch04_2E-2
+| 		                            == Nomoto et al. (2006)
+| 		                               (One initial metallicity per model...)
+| 		                             - No06_0
+| 		                             - No06_0.001
+| 		                             - No06_0.004
+| 		                             - No06_0.02
+| 		                            == Romano et al. (2010) 
+| 		                             - Ro10_0 
+| 		                             - Ro10_0.000002 
+| 		                             - Ro10_0.0002 
+| 		                             - Ro10_0.002 
+| 		                             - Ro10_0.02 
+| 		                            == Nomoto et al. (2013)
+| 		                               (One initial metallicity per model...)
+| 		                             = SNcc: 11 - 40 (140) M_sun
+| 		                              - No13_SNcc_0
+| 		                              - No13_SNcc_0.001
+| 		                              - No13_SNcc_0.004
+| 		                              - No13_SNcc_0.008
+| 		                              - No13_SNcc_0.02
+| 		                              - No13_SNcc_0.05
+| 		                             = PISNe: 140 - 300 M_sun
+| 		                              - No13_PISNe_0
+| 		                             = All SNe (SNcc+PISNe): 11 - 300 M_sun
+| 		                              - No13_SNe_0
+| 		                             = HNe: 20 - 40 (140) M_sun
+| 		                              - No13_HNe_0
+| 		                              - No13_HNe_0.001
+| 		                              - No13_HNe_0.004
+| 		                              - No13_HNe_0.008
+| 		                              - No13_HNe_0.02
+| 		                              - No13_HNe_0.05
+| 		                            == Heger & Woosley (2002,2010)
+| 		                               (Initial metallicity always 0!)
+| 		                             = SNcc: 10 - 100 M_sun
+| 		                              - He0210_SNcc_0
+| 		                             = PISNe: 140 - 260 M_sun
+| 		                              - He0210_PISNe_0
+| 		                             = All SNe (SNcc+PISNe): 10 - 260 M_sun
+| 		                              - He0210_SNe_0
+| 		                            == Sukhbold et al. (2016)
+| 		                              - Su16_N20
+| 		                              - Su16_W18
+| 		                            ===================
+| 		                            ==== AGB stars ====
+| 		                            ===================
+| 		                            == Karakas et al. (2010) 
+| 		                             - K10_AGB_0.0001 
+| 		                             - K10_AGB_0.004 
+| 		                             - K10_AGB_0.008 
+| 		                             - K10_AGB_0.02 
+| 		                            == Nomoto et al. (2013)
+| 		                               (One initial metallicity per model...)
+| 		                             = AGB: 0.9 - 6.5 M_sun (adapted from Karakas 2010)
+| 		                              - No13_AGB_0.001
+| 		                              - No13_AGB_0.004
+| 		                              - No13_AGB_0.008
+| 		                              - No13_AGB_0.02
+|
+| 		        --disable-plot -- If this argument ends the command line, 
+| 		        		  no plot is displayed after the fit 
+| 		        		  (useful for fitting in series, e.g. using serial_fitter.sh) 
+|
+|
+| 		EXAMPLES: python abunfit.py data/CHEERS_Mernier18b.dat 2 -2.35 No13_SNcc_0.02 Se13_N100
+| 			  	--> Fits two models (1 SNcc + 1 SNIa) to the CHEERS abundance ratios 
+| 			  	    (Mernier et al. 2018) assuming a Salpeter IMF. 
+|
+| 			  python abunfit.py data/CHEERS_Mernier18b.dat 2 -2.35 No13_SNcc_0.02 Se13_N100 --disable-plot
+| 			  	--> Same as above with the plotting option disabled. 
+|
+| 			  python abunfit.py data/proto-solar_Lodders09.dat 3 -2.35 No13_AGB_0.02 No13_SNcc_0.02 Se13_N100
+| 			  	--> Fits three models (1 AGB + 1 SNcc + 1 SNIa) to the proto-solar ratios 
+| 			  	    (Lodders et al. 2009) assuming a Salpeter IMF. 
+|
+| 			  python abunfit.py data/proto-solar_Lodders09.dat 3 -2.35 No13_AGB_0.02 No13_SNcc_0.02 Se13_N100
+| 			  	--> Same as above, now assuming a top-heavy IMF. 
+|
+|
+| 		VERSION: 3.0 (October 2023)
+| 		         2.0 (November 2018)
+| 		         1.5 (June 2018)
+| 		         1.4 (January 2018)
+| 		         1.3 (December 2017)
+| 		         1.2 (February 2016)
+| 		         1.1 (January 2016)
+| 		         1.0 (July 2015)
+|
+|
+| 		AUTHOR: Francois Mernier
+|
+|
 |
 |
 |______________________________________________________________________________________________________________
@@ -275,9 +323,15 @@ CONTENTS OF THIS DIRECTORY
 				- Hitomi Collaboration, 2017, Nature, 551, 478
 				- Simionescu, A., Nakashima, S., Yamaguchi, Y. et al., 2018, MNRAS, submitted
 				- Mernier, F., Werner, N., de Plaa, J. et al., 2018b, MNRAS, 480, L95
+				
+		- solar_tables/		Contains the solar abundance reference tables taken from the 
+				literature :
+				- angr89.txt (Anders, E. & Grevesse, N., 1989, Geoch. et Cosmoch. Acta,  53, 197)
+				- lodders09.txt (Lodders, K., Palme, H. & Geil, H. P., Landolt-Börnstein, 560)
 
 		- SNcc/		Contains the predicted yields from SNcc contributions (Heger & Woosley 2002, 
-				2010, Chieffi & Limongi 2004, Nomoto et al. 2006, 2013, Sukhbold et al. 2016). 
+				2010, Chieffi & Limongi 2004, Nomoto et al. 2006, Romano et al. 2010, 
+				Nomoto et al. 2013, Sukhbold et al. 2016). 
 				Compared to Nomoto et al. (2006), the Nomoto et al. (2013) yields contain an 
 				addditional model of initial metallicity of Z=0.008, as well as slightly updated 
 				calculations (e.g. taking into account the full decay of some unstable isotopes). 
@@ -294,7 +348,9 @@ CONTENTS OF THIS DIRECTORY
 				cases, the original SNcc models included unstable istopoes, which would later 
 				decay into stable one, hence changing the final yields. These models have been 
 				re-calculated once these istopes are fully decayed. The original models can be 
-				found under the "_undecayed" suffix.
+				found under the "_undecayed" suffix. Note that the models from Romano et al. (2010) 
+				are pre-integrated assuming a Salpeter IMF. Changing the IMF slope in the command 
+				line will result in no changes.
 
 		- SNIa/		Contains the predicted yields from SNIa contributions (Iwamoto et al. 1999, 
 				Badenes et al. 2006, Maeda et al. 2010, Pakmor et al. 2010, Sim et al. 2010, 
@@ -374,8 +430,7 @@ CONTENTS OF THIS DIRECTORY
 		- serial_fitter.sh	Bash script running a series of abundance fits (abunfit.py) with 
 					various yield models and/or IMF slopes. All the tested combinations 
 					are then folded by increasing chi^2 (via the routine 
-					sort_summary_models.py) into summary_models.txt. The best-fit 
-					combination of models is stored in best_model.txt.
+					sort_fitting_results.py) into fitting_results_sorted.txt.
 
 
 
@@ -383,6 +438,6 @@ CONTENTS OF THIS DIRECTORY
 
 
 
-For questions, feedback or suggestions, please contact: francois.mernier@esa.int
+For questions, feedback or suggestions, please contact: fmernier@umd.edu (or francois.mernier.astro@gmail.com)
 
 
