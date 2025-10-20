@@ -274,7 +274,7 @@ def main():
 			  python abunfit.py data/proto-solar_Lodders09.dat 3 -2.35 No13_AGB_0.02 No13_SNcc_0.02 Se13_N100\n \
 			  	--> Fits three models (1 AGB + 1 SNcc + 1 SNIa) to the proto-solar ratios \n \
 			  	    (Lodders et al. 2009) assuming a Salpeter IMF. \n\n \
-			  python abunfit.py data/proto-solar_Lodders09.dat 3 -2.35 No13_AGB_0.02 No13_SNcc_0.02 Se13_N100\n \
+			  python abunfit.py data/proto-solar_Lodders09.dat 3 0.0 No13_AGB_0.02 No13_SNcc_0.02 Se13_N100\n \
 			  	--> Same as above, now assuming a top-heavy IMF. \n\n\n \
 		VERSION: 3.0 (October 2023)\n \
 		         2.0 (November 2018)\n \
